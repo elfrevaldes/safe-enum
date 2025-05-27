@@ -270,4 +270,4 @@ SafeEnum is designed to be lightweight and efficient:
 
 ## License
 
-MIT © [Your Name]
+MIT © Elfre Valdes
