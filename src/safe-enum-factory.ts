@@ -1,0 +1,195 @@
+import type { SafeEnum, SafeEnumBase, SafeEnumValue } from "./types/interfaces/safe-enum"
+
+/**
+ * Creates a type-safe enum from a given enum map
+ *
+ * @example
+ * ```typescript
+ * const enumMap = {
+ *   FOO: { value: "foo", index: 0 },
+ *   BAR: { value: "bar", index: 1 }
+ * } as const;
+ *
+ * export type MyEnum = SafeEnumValue<typeof enumMap>;
+ * export const MyEnum = CreateSafeEnum(enumMap);
+ * ```
+ *
+ * @typeParam T - The type of the enum map (inferred)
+ * @param enumMap - The enum map defining the enum values
+ * @returns A type-safe enum object with lookup methods
+ */
+export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
+  enumMap: T
+): SafeEnum<T> & { [K in keyof T]: SafeEnumValue<T> } {
+  // Make all existing indexes immutable and collect used indexes
+  const usedIndexes = new Set<number>()
+
+  // Process each enum value to ensure proper indexing
+  Object.entries(enumMap).forEach(([key, obj]) => {
+    // Ensure value is immutable
+    if (!Object.getOwnPropertyDescriptor(obj, "value")?.writable) {
+      Object.defineProperty(obj, "value", {
+        value: obj.value,
+        writable: false,
+        configurable: false,
+        enumerable: true
+      })
+    }
+
+    // Handle index assignment if not provided
+    if (obj.index === undefined) {
+      let nextIndex = 0
+      while (usedIndexes.has(nextIndex)) nextIndex++
+      Object.defineProperty(obj, "index", {
+        value: nextIndex,
+        writable: false,
+        configurable: false,
+        enumerable: true
+      })
+      usedIndexes.add(nextIndex)
+    } else if (!usedIndexes.has(obj.index)) {
+      // Only add the index if it's not a duplicate
+      Object.defineProperty(obj, "index", {
+        value: obj.index,
+        writable: false,
+        configurable: false,
+        enumerable: true
+      })
+      usedIndexes.add(obj.index)
+    } else {
+      // Find the conflicting key for better error reporting
+      const conflictingKey = Object.entries(enumMap).find(
+        ([k, v]) => v.index === obj.index && k !== key
+      )?.[0]
+
+      throw new Error(
+        `Duplicate index ${obj.index} found in enum map: ` +
+          `'${key}' conflicts with '${conflictingKey || "unknown"}'`
+      )
+    }
+  })
+  // Create a map from value to enum entry for faster lookups
+  const valueToEntry = new Map<string, SafeEnumValue<T>>()
+  const indexToEntry = new Map<number, SafeEnumValue<T>>()
+
+  // Helper to create an enum value with proper typing
+  function createEnumValue(key: string, value: string, index: number): SafeEnumValue<T> {
+    const enumValue = {
+      key,
+      value,
+      index,
+      isEqual(other: SafeEnumValue<T> | SafeEnumValue<T>[]): boolean {
+        if (!other) return false
+        const others = Array.isArray(other) ? other : [other]
+        return others.some((item) => item.value === value)
+      }
+    } as SafeEnumValue<T>
+
+    // Store for fast lookups
+    valueToEntry.set(value, enumValue)
+    indexToEntry.set(index, enumValue)
+
+    return Object.freeze(enumValue)
+  }
+
+  // Create all enum values
+  const entries = Object.entries(enumMap).map(([key, { value, index }]) => {
+    if (index === undefined) {
+      throw new Error(`Missing index for enum key: ${key}`)
+    }
+    return [key, createEnumValue(key, value, index)] as const
+  })
+
+  // Create the enum map
+  const enumValues = Object.fromEntries(entries) as { [K in keyof T]: SafeEnumValue<T> }
+
+  // Returns true if the enum contains the specified value
+  function hasValue(value: string): boolean {
+    return valueToEntry.has(value)
+  }
+
+  // Returns true if the enum contains the specified key
+  function hasKey(key: string): boolean {
+    return key in enumValues
+  }
+
+  // Returns true if the enum contains the specified index
+  function hasIndex(index: number): boolean {
+    return indexToEntry.has(index)
+  }
+
+  // Factory methods with safe variants only
+  // Lookup by index
+  function fromNumber<N extends number>(
+    num: N
+  ): Extract<SafeEnumValue<T>, { index: N }> | undefined {
+    return indexToEntry.get(num) as Extract<SafeEnumValue<T>, { index: N }> | undefined
+  }
+
+  // Lookup by string value
+  function fromString<S extends string>(
+    str: S
+  ): Extract<SafeEnumValue<T>, { value: S }> | undefined {
+    return valueToEntry.get(str) as Extract<SafeEnumValue<T>, { value: S }> | undefined
+  }
+
+  // Lookup by key
+  function fromKey<K extends keyof T & string>(
+    key: K
+  ): Extract<SafeEnumValue<T>, { key: K }> | undefined {
+    return (key in enumValues ? enumValues[key] : undefined) as
+      | Extract<SafeEnumValue<T>, { key: K }>
+      | undefined
+  }
+
+  function isEnumValue(value: unknown): value is SafeEnumValue<T> {
+    if (!value || typeof value !== "object") return false
+
+    const val = value as Record<string, unknown>
+    const key = val["key"]
+
+    return (
+      typeof key === "string" &&
+      typeof val["value"] === "string" &&
+      typeof val["index"] === "number" &&
+      key in enumValues &&
+      enumValues[key as keyof T]?.value === val["value"] &&
+      enumValues[key as keyof T]?.index === val["index"]
+    )
+  }
+
+  const enumValuesArray = Object.values(enumValues)
+
+  // Compares this enum value with another value or array of values
+  function isEqual(other: SafeEnumValue<T> | SafeEnumValue<T>[]): boolean {
+    if (!other) return false
+    const values = Array.isArray(other) ? other : [other]
+    if (values.length === 0) return false
+
+    const firstValue = values[0]?.value
+    return values.every((value) => value?.value === firstValue)
+  }
+
+  // Create the factory object with all methods and values
+  const factory = {
+    ...enumValues,
+    fromNumber,
+    fromString,
+    fromKey,
+    isEnumValue,
+    isEqual,
+    hasValue,
+    hasKey,
+    hasIndex,
+    values: () => [...enumValuesArray],
+    keys: () => Object.keys(enumValues) as (keyof T & string)[],
+    entries: () => Object.entries(enumValues) as [keyof T & string, SafeEnumValue<T>][],
+    [Symbol.iterator]: function* () {
+      for (const value of enumValuesArray) {
+        yield value
+      }
+    }
+  } as const as unknown as SafeEnum<T> & { [K in keyof T]: SafeEnumValue<T> }
+
+  return Object.freeze(factory)
+}
