@@ -1,5 +1,62 @@
 import type { SafeEnum, SafeEnumBase, SafeEnumValue } from "./types/interfaces/safe-enum"
 
+
+/**
+ * Converts an array of strings into an enum map with uppercase keys and numeric indices.
+ *
+ * Each string in the input array becomes an enum member with the key as the uppercased string,
+ * the value as the original string, and the index as its position in the array.
+ *
+ * @param values Array of string values to convert to an enum map.
+ * @returns Enum map suitable for SafeEnum creation.
+ *
+ * @example
+ * convertToEnumMap(["pending", "approved"])
+ * // => { PENDING: { value: "pending", index: 0 }, APPROVED: { value: "approved", index: 1 } }
+ */
+function convertToEnumMap(values: string[]): Record<string, SafeEnumBase> {
+  const enumMap: Record<string, SafeEnumBase> = {}
+  values.forEach((value, index) => {
+    enumMap[value.toUpperCase()] = { value, index }
+  })
+  return enumMap
+}
+
+/**
+ * Creates a SafeEnum from an array or tuple of string literals.
+ *
+ * Each string in the input array becomes an enum member with the key as the uppercased string,
+ * the value as the original string, and the index as its position in the array.
+ *
+ * The resulting enum supports all SafeEnum methods (fromString, fromNumber, isEqual, keys, entries, etc.)
+ * and is fully type-safe.
+ *
+ * @example
+ * ```typescript
+ * const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
+ * Status.PENDING.value; // "pending"
+ * Status.fromValue("pending") === Status.PENDING; // true
+ * Status.fromIndex(0) === Status.PENDING; // true
+ * Status.PENDING.isEqual(Status.fromValue("pending")); // true
+ * Status.keys(); // ["PENDING", "APPROVED", "REJECTED"]
+ * ```
+ *
+ * // For type safety
+ * export type Status = SafeEnumValue<typeof Status>;
+ */
+import type { SafeEnumWithMembers } from "./types/interfaces/safe-enum"
+
+export function CreateSafeEnumFromArray<
+  T extends readonly string[]
+>(values: T): SafeEnumWithMembers<{ [K in Uppercase<T[number]>]: { value: Extract<T[number], string>, index: number } }> {
+  // Build enum map with uppercase keys
+  const enumMap = (values as readonly string[]).reduce<Record<string, { value: string; index: number }>>((acc, value, idx) => {
+    acc[value.toUpperCase()] = { value, index: idx };
+    return acc;
+  }, {});
+  return CreateSafeEnum(enumMap) as SafeEnumWithMembers<{ [K in Uppercase<T[number]>]: { value: Extract<T[number], string>, index: number } }>;
+}
+
 /**
  * Creates a type-safe enum from a given enum map
  *
@@ -119,18 +176,18 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
   }
 
   // Factory methods with safe variants only
-  // Lookup by index
-  function fromNumber<N extends number>(
-    num: N
+  // Canonical: Lookup by index
+  function fromIndex<N extends number>(
+    index: N
   ): Extract<SafeEnumValue<T>, { index: N }> | undefined {
-    return indexToEntry.get(num) as Extract<SafeEnumValue<T>, { index: N }> | undefined
+    return indexToEntry.get(index) as Extract<SafeEnumValue<T>, { index: N }> | undefined
   }
 
-  // Lookup by string value
-  function fromString<S extends string>(
-    str: S
+  // Canonical: Lookup by value (string)
+  function fromValue<S extends string>(
+    value: S
   ): Extract<SafeEnumValue<T>, { value: S }> | undefined {
-    return valueToEntry.get(str) as Extract<SafeEnumValue<T>, { value: S }> | undefined
+    return valueToEntry.get(value) as Extract<SafeEnumValue<T>, { value: S }> | undefined
   }
 
   // Lookup by key
@@ -173,8 +230,8 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
   // Create the factory object with all methods and values
   const factory = {
     ...enumValues,
-    fromNumber,
-    fromString,
+    fromValue,
+    fromIndex,
     fromKey,
     isEnumValue,
     isEqual,

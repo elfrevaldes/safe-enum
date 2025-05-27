@@ -1,4 +1,4 @@
-import { CreateSafeEnum } from "./safe-enum-factory"
+import { CreateSafeEnum, CreateSafeEnumFromArray } from "./safe-enum-factory"
 
 // Mock console.error to avoid polluting test output
 const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
@@ -86,28 +86,28 @@ describe("SafeEnum", () => {
     })
   })
 
-  describe("fromNumber", () => {
+  describe("fromIndex", () => {
     it("should return correct enum value for valid index", () => {
-      expect(TestEnum.fromNumber(0)).toBe(TestEnum.FOO)
-      expect(TestEnum.fromNumber(1)).toBe(TestEnum.BAR)
-      expect(TestEnum.fromNumber(2)).toBe(TestEnum.BAZ)
+      expect(TestEnum.fromIndex(0)).toBe(TestEnum.FOO)
+      expect(TestEnum.fromIndex(1)).toBe(TestEnum.BAR)
+      expect(TestEnum.fromIndex(2)).toBe(TestEnum.BAZ)
     })
 
     it("should return undefined for invalid index", () => {
-      expect(TestEnum.fromNumber(999)).toBeUndefined()
-      expect(TestEnum.fromNumber(-1)).toBeUndefined()
+      expect(TestEnum.fromIndex(999)).toBeUndefined()
+      expect(TestEnum.fromIndex(-1)).toBeUndefined()
     })
   })
 
-  describe("fromString", () => {
+  describe("fromValue", () => {
     it("should return correct enum value for valid string", () => {
-      expect(TestEnum.fromString("foo")).toBe(TestEnum.FOO)
-      expect(TestEnum.fromString("bar")).toBe(TestEnum.BAR)
-      expect(TestEnum.fromString("baz")).toBe(TestEnum.BAZ)
+      expect(TestEnum.fromValue("foo")).toBe(TestEnum.FOO)
+      expect(TestEnum.fromValue("bar")).toBe(TestEnum.BAR)
+      expect(TestEnum.fromValue("baz")).toBe(TestEnum.BAZ)
     })
 
     it("should return undefined for invalid string", () => {
-      expect(TestEnum.fromString("invalid")).toBeUndefined()
+      expect(TestEnum.fromValue("invalid")).toBeUndefined()
     })
   })
 
@@ -389,6 +389,31 @@ describe("SafeEnum", () => {
   })
 
   describe("Edge Cases", () => {
+    it("should create enum from array of strings using CreateSafeEnumFromArray", () => {
+      const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
+      expect(Status["PENDING"].value).toBe("pending");
+      expect(Status["APPROVED"].value).toBe("approved");
+      expect(Status["REJECTED"].value).toBe("rejected");
+      expect(Status["PENDING"].index).toBe(0);
+      expect(Status["APPROVED"].index).toBe(1);
+      expect(Status["REJECTED"].index).toBe(2);
+      // Should have same lookup by value (fromValue)
+      expect(Status.fromValue("pending")).toBe(Status["PENDING"]);
+      expect(Status.fromValue("approved")).toBe(Status["APPROVED"]);
+      expect(Status.fromValue("rejected")).toBe(Status["REJECTED"]);
+      // Should have lookup by index (fromIndex)
+      expect(Status.fromIndex(0)).toBe(Status["PENDING"]);
+      expect(Status.fromIndex(1)).toBe(Status["APPROVED"]);
+      expect(Status.fromIndex(2)).toBe(Status["REJECTED"]);
+      // Should have keys and entries
+      expect(Status.keys()).toEqual(["PENDING", "APPROVED", "REJECTED"]);
+      expect(Status.entries().map(([,e]) => e.value)).toEqual(["pending", "approved", "rejected"]);
+      // Should be frozen
+      expect(Object.isFrozen(Status)).toBe(true);
+      expect(Object.isFrozen(Status["PENDING"])).toBe(true);
+      // Should have read-only properties
+      expect(() => { (Status["PENDING"] as any).value = "foo" }).toThrow();
+    });
     it("should handle empty enum", () => {
       const EmptyEnum = CreateSafeEnum({} as const)
       expect(EmptyEnum.keys()).toEqual([])

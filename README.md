@@ -70,7 +70,7 @@ console.log(UserRole.ADMIN.index); // 0
 // Type-safe reverse lookups
 const role = UserRole.fromValue('editor'); // Returns UserRole.EDITOR | undefined
 const roleByKey = UserRole.fromKey('ADMIN'); // Returns UserRole.ADMIN | undefined
-const roleByIndex = UserRole.fromNumber(2); // Returns UserRole.VIEWER | undefined
+const roleByIndex = UserRole.fromIndex(2); // Returns UserRole.VIEWER | undefined
 
 // Runtime validation
 if (UserRole.hasValue('admin')) {
@@ -81,6 +81,32 @@ if (UserRole.hasValue('admin')) {
 for (const [key, value] of UserRole.entries()) {
   console.log(`${key}: ${value.value}`);
 }
+```
+
+## Creating Enums from Arrays
+
+You can create a SafeEnum directly from an array or tuple of string literals using `CreateSafeEnumFromArray`. This is the simplest way to define an enum when you only need string values and auto-assigned indices.
+
+```typescript
+import { CreateSafeEnumFromArray } from 'safe-enum';
+
+const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
+
+// Access enum members
+Status.PENDING.value; // "pending"
+Status.APPROVED.index; // 1
+
+// Type-safe lookups
+const status = Status.fromValue("approved"); // Status.APPROVED | undefined
+const byIndex = Status.fromIndex(2); // Status.REJECTED | undefined
+const byKey = Status.fromKey("PENDING"); // Status.PENDING | undefined
+
+// All keys and values
+Status.keys(); // ["PENDING", "APPROVED", "REJECTED"]
+Status.entries(); // [["PENDING", Status.PENDING], ...]
+
+// TypeScript type inference
+export type Status = typeof Status;
 ```
 
 ## Advanced Usage
@@ -132,7 +158,7 @@ const isValid = adminRoles.some(role => role.isEqual(UserRole.ADMIN));
 |--------|-------------|---------|
 | `fromValue(value: string)` | Get enum entry by its value | `UserRole.fromValue('admin')` |
 | `fromKey(key: string)` | Get enum entry by its key | `UserRole.fromKey('ADMIN')` |
-| `fromNumber(index: number)` | Get enum entry by its index | `UserRole.fromNumber(0)` |
+| `fromIndex(index: number)` | Get enum entry by its index | `UserRole.fromIndex(0)` |
 | `hasValue(value: string)` | Check if value exists | `UserRole.hasValue('admin')` |
 | `hasKey(key: string)` | Check if key exists | `UserRole.hasKey('ADMIN')` |
 | `hasIndex(index: number)` | Check if index exists | `UserRole.hasIndex(0)` |
@@ -174,7 +200,7 @@ const StatusCode = CreateSafeEnum({
 function handleResponse(response: ApiResponse<unknown>) {
   // Lookup by status code if it's a number
   let status = typeof response.status === 'number' 
-    ? StatusCode.fromNumber(response.status)
+    ? StatusCode.fromIndex(response.status)
     : StatusCode.fromValue(response.status);
     
   if (!status) {

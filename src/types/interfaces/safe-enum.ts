@@ -14,6 +14,8 @@ export type SafeEnumValue<T extends Record<string, SafeEnumBase>> = {
   }
 }[keyof T]
 
+export type SafeEnumWithMembers<T extends Record<string, SafeEnumBase>> = SafeEnum<T> & { [K in keyof T]: SafeEnumValue<T> };
+
 /**
  * SafeEnum is an interface that represents a type-safe enum with runtime validation.
  * SafeEnums are created using the CreateSafeEnum function.
@@ -71,10 +73,10 @@ export type SafeEnumValue<T extends Record<string, SafeEnumBase>> = {
 export interface SafeEnum<T extends Record<string, SafeEnumBase> = any> {
   /**
    * Gets an enum value by its index.
-   * @param num The index to look up.
+   * @param index The index to look up.
    * @returns The specific enum value if found, otherwise undefined.
    */
-  fromNumber<N extends number>(num: N): Extract<SafeEnumValue<T>, { index: N }> | undefined
+  fromIndex<N extends number>(index: N): Extract<SafeEnumValue<T>, { index: N }> | undefined
 
   /**
    * Checks if the enum contains a specific string value.
@@ -98,11 +100,11 @@ export interface SafeEnum<T extends Record<string, SafeEnumBase> = any> {
   hasIndex(index: number): boolean
 
   /**
-   * Gets an enum value by its string value.
-   * @param str The string value to look up.
+   * Gets an enum value by its value property (string).
+   * @param value The string value to look up.
    * @returns The specific enum value if found, otherwise undefined.
    */
-  fromString<S extends string>(str: S): Extract<SafeEnumValue<T>, { value: S }> | undefined
+  fromValue<S extends string>(value: S): Extract<SafeEnumValue<T>, { value: S }> | undefined
 
   /**
    * Gets an enum value by its key.
