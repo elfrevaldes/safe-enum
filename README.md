@@ -27,11 +27,11 @@ A type-safe, flexible enum factory for TypeScript with runtime validation and ty
 ## Installation
 
 ```bash
-npm install safe-enum
+npm install type-safe-enum
 # or
-yarn add safe-enum
+yarn add type-safe-enum
 # or
-pnpm add safe-enum
+pnpm add type-safe-enum
 ```
 
 ## Why SafeEnum?
@@ -52,7 +52,7 @@ pnpm add safe-enum
 ## Basic Usage
 
 ```typescript
-import { CreateSafeEnum } from 'safe-enum';
+import { CreateSafeEnum } from 'type-safe-enum';
 
 // Define your enum
 const UserRole = CreateSafeEnum({
@@ -88,7 +88,7 @@ for (const [key, value] of UserRole.entries()) {
 You can create a SafeEnum directly from an array or tuple of string literals using `CreateSafeEnumFromArray`. This is the simplest way to define an enum when you only need string values and auto-assigned indices.
 
 ```typescript
-import { CreateSafeEnumFromArray } from 'safe-enum';
+import { CreateSafeEnumFromArray } from 'type-safe-enum';
 
 const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
 

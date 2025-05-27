@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial release of safe-enum
+- Initial release of type-safe-enum
 - Type-safe enum factory with runtime validation
 - Comprehensive test suite
 - Full TypeScript support
