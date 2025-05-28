@@ -2,7 +2,6 @@
 
 [![npm version](https://img.shields.io/npm/v/safe-enum.svg)](https://www.npmjs.com/package/safe-enum)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/elfrevaldes/safe-enum/ci.yml)](https://github.com/elfrevaldes/safe-enum/actions)
 [![codecov](https://codecov.io/gh/elfrevaldes/safe-enum/graph/badge.svg?token=YOUR_TOKEN_HERE)](https://codecov.io/gh/elfrevaldes/safe-enum)
 
@@ -10,19 +9,19 @@ A type-safe, flexible enum factory for TypeScript with runtime validation and ty
 
 ## Features
 
-- 🛡️ **Type-safe**: Full TypeScript support with strict type checking
-- 🔄 **Runtime validation**: Verify enum values at runtime
-- 🧩 **Flexible**: Supports both string and numeric enums
-- 🚀 **Zero dependencies**: Lightweight and fast
-- 🔍 **Auto-completion**: Get full IntelliSense support in your IDE
-- 🧪 **Tested**: Comprehensive test coverage
-- 📦 **Tree-shakeable**: Only includes what you use
-- 🔄 **Bi-directional mapping** between keys and values
-- 🔍 **Auto-completion** for both keys and values
-- 📦 **Zero dependencies**
-- 🧪 **Fully tested** with comprehensive test coverage
-- 🧊 **Immutable** by design
-- 🔄 **Iterable** with built-in collection methods
+- **Type-safe**: Full TypeScript support with strict type checking
+- **Runtime validation**: Verify enum values at runtime
+- **Flexible**: Supports both string and numeric enums
+- **Zero dependencies**: Lightweight and fast
+- **Auto-completion**: Get full IntelliSense support in your IDE
+- **Tested**: Comprehensive test coverage using [Vitest](https://vitest.dev/)
+- **Tree-shakeable**: Only includes what you use
+- **Bi-directional mapping** between keys and values
+- **Auto-completion** for both keys and values
+- **Zero dependencies**
+- **Fully tested** with comprehensive test coverage
+- **Immutable** by design
+- **Iterable** with built-in collection methods
 
 ## Installation
 
@@ -40,14 +39,14 @@ pnpm add type-safe-enum
 
 | Feature | Native Enum | String Unions | Const Objects | SafeEnum |
 |---------|------------|---------------|---------------|----------|
-| Type Safety | ✅ | ✅ | ⚠️ (requires care) | ✅ |
-| Runtime Safety | ❌ | ❌ | ✅ | ✅ |
-| IntelliSense | ✅ | ✅ | ✅ | ✅ |
-| Reverse Lookup | ✅ (but unsafe) | ❌ | ❌ | ✅ |
-| JSON Serialization | ❌ (numeric issues) | ✅ | ✅ | ✅ |
-| Maintenance | ❌ (verbose) | ✅ | ✅ | ✅ |
-| String Comparison | ❌ (can be confusing) | ❌ | ❌ | ✅ |
-| Iteration | ❌ | ❌ | ✅ | ✅ |
+| Type Safety | | | (requires care) | |
+| Runtime Safety | | | | |
+| IntelliSense | | | | |
+| Reverse Lookup | (but unsafe) | | | |
+| JSON Serialization | (numeric issues) | | | |
+| Maintenance | (verbose) | | | |
+| String Comparison | (can be confusing) | | | |
+| Iteration | | | | |
 
 ## Basic Usage
 
@@ -270,4 +269,4 @@ SafeEnum is designed to be lightweight and efficient:
 
 ## License
 
-MIT © Elfre Valdes
+MIT Elfre Valdes

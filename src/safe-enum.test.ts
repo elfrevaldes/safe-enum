@@ -1,7 +1,9 @@
 import { CreateSafeEnum, CreateSafeEnumFromArray } from "./safe-enum-factory"
 
+import { describe, it, expect, afterAll, vi } from 'vitest'
+
 // Mock console.error to avoid polluting test output
-const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 type TestEnumType = {
   FOO: { value: 'foo'; index: number };
@@ -331,7 +333,7 @@ describe("SafeEnum", () => {
         expect(maybeEnum.value).toBe("foo")
         expect(maybeEnum.index).toBe(0)
       } else {
-        fail("Type guard failed")
+        throw new Error("Type guard failed")
       }
     })
 

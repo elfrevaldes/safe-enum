@@ -70,6 +70,7 @@ export type SafeEnumWithMembers<T extends Record<string, SafeEnumBase>> = SafeEn
  * export { Status as StatusEnum } from './path-to-enum';
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface SafeEnum<T extends Record<string, SafeEnumBase> = any> {
   /**
    * Gets an enum value by its index.

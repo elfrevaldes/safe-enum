@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full TypeScript support
 - Documentation and examples
 
+## [1.0.2] - 2025-05-27
+
+### Changed
+- Migrated test runner from Jest to Vitest for faster and warning-free testing.
+- Removed all Jest-related dependencies and configuration.
+- Eliminated all npm warnings about deprecated packages (e.g., inflight, glob).
+- Bumped version to 1.0.2.
+
 ## [1.0.1] - 2025-05-27
 
 ### Added
