@@ -35,7 +35,7 @@ pnpm add type-safe-enum
 
 ## Requirements
 
-- Node.js >= 20.0.0
+- Node.js >= 14.0.0
 - npm >= 10
 
 ## Why SafeEnum?
@@ -44,14 +44,14 @@ pnpm add type-safe-enum
 
 | Feature | Native Enum | String Unions | Const Objects | SafeEnum |
 |---------|------------|---------------|---------------|----------|
-| Type Safety | | | (requires care) | |
-| Runtime Safety | | | | |
-| IntelliSense | | | | |
-| Reverse Lookup | (but unsafe) | | | |
-| JSON Serialization | (numeric issues) | | | |
-| Maintenance | (verbose) | | | |
-| String Comparison | (can be confusing) | | | |
-| Iteration | | | | |
+| Type Safety | <div align="center">✅</div> | <div align="center">✅</div> | <div align="center">⚠️<br>(requires care)</div> | <div align="center">✅</div> |
+| Runtime Safety | <div align="center">❌</div> | <div align="center">❌</div> | <div align="center">✅</div> | <div align="center">✅</div> |
+| IntelliSense | <div align="center">✅</div> | <div align="center">✅</div> | <div align="center">✅</div> | <div align="center">✅</div> |
+| Reverse Lookup | <div align="center">✅<br>(but unsafe)</div> | <div align="center">❌</div> | <div align="center">❌</div> | <div align="center">✅</div> |
+| JSON Serialization | <div align="center">❌ <br>(numeric issues)</div> | <div align="center">✅</div> | <div align="center">✅</div> | <div align="center">✅</div> |
+| Maintenance | <div align="center">❌ <br>(verbose)</div> | <div align="center">✅</div> | <div align="center">✅</div> | <div align="center">✅</div> |
+| String Comparison | <div align="center">❌ <br>(can be confusing)</div> | <div align="center">❌</div> | <div align="center">❌</div> | <div align="center">✅</div> |
+| Iteration | <div align="center">❌</div> | <div align="center">❌</div> | <div align="center">✅</div> | <div align="center">✅</div> |
 
 ## Basic Usage
 

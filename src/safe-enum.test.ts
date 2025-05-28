@@ -3,7 +3,7 @@ import { CreateSafeEnum, CreateSafeEnumFromArray } from "./safe-enum-factory"
 import { describe, it, expect, afterAll, vi } from 'vitest'
 
 // Mock console.error to avoid polluting test output
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => { /* intentionally empty for test */ })
 
 
 
