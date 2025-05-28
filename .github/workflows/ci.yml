@@ -72,7 +72,28 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Check for existing release
+        id: check-release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const releaseExists = releases.some(release => 
+              release.tag_name === `v${{ steps.package-version.outputs.version }}`
+            );
+            core.setOutput('exists', releaseExists);
+
+      - name: Skip if release exists
+        if: steps.check-release.outputs.exists == 'true'
+        run: |
+          echo "Release v${{ steps.package-version.outputs.version }} already exists, skipping..."
+          exit 0
+
       - name: Create Release
+        if: steps.check-release.outputs.exists != 'true'
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -91,4 +112,6 @@ jobs:
           npm config set registry=https://registry.npmjs.org/
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+          npm publish --access public
