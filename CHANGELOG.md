@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.2] - 2025-05-27
 
 ### Changed
+- Node.js 20+ is now required for all features, linting, and CI compatibility.
 - Migrated test runner from Jest to Vitest for faster and warning-free testing.
 - Removed all Jest-related dependencies and configuration.
 - Eliminated all npm warnings about deprecated packages (e.g., inflight, glob).

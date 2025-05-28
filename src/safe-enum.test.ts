@@ -5,11 +5,7 @@ import { describe, it, expect, afterAll, vi } from 'vitest'
 // Mock console.error to avoid polluting test output
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-type TestEnumType = {
-  FOO: { value: 'foo'; index: number };
-  BAR: { value: 'bar'; index: number };
-  BAZ: { value: 'baz'; index: number };
-}
+
 
 describe("SafeEnum", () => {
   // Define a test enum
@@ -30,18 +26,12 @@ describe("SafeEnum", () => {
     let errorThrown = false;
     try {
       callback()
-    } catch (error) {
+    } catch { 
       errorThrown = true;
     }
     expect(errorThrown).toBe(true);
   }
   
-  // Helper to get around TypeScript's readonly checks in tests
-  function unsafeAssign<T, K extends keyof T>(obj: T, key: K, value: T[K]): void {
-    // @ts-ignore - Deliberately breaking type safety for testing
-    obj[key] = value;
-  }
-
   describe("Basic functionality", () => {
     it("should create enum with correct values", () => {
       expect(TestEnum.FOO).toEqual(

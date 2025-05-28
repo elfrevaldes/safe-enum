@@ -33,6 +33,11 @@ yarn add type-safe-enum
 pnpm add type-safe-enum
 ```
 
+## Requirements
+
+- Node.js >= 20.0.0
+- npm >= 10
+
 ## Why SafeEnum?
 
 ### Comparison with Other Approaches

@@ -5,23 +5,6 @@ import type { SafeEnum, SafeEnumBase, SafeEnumValue } from "./types/interfaces/s
  * Converts an array of strings into an enum map with uppercase keys and numeric indices.
  *
  * Each string in the input array becomes an enum member with the key as the uppercased string,
- * the value as the original string, and the index as its position in the array.
- *
- * @param values Array of string values to convert to an enum map.
- * @returns Enum map suitable for SafeEnum creation.
- *
- * @example
- * convertToEnumMap(["pending", "approved"])
- * // => { PENDING: { value: "pending", index: 0 }, APPROVED: { value: "approved", index: 1 } }
- */
-function convertToEnumMap(values: string[]): Record<string, SafeEnumBase> {
-  const enumMap: Record<string, SafeEnumBase> = {}
-  values.forEach((value, index) => {
-    enumMap[value.toUpperCase()] = { value, index }
-  })
-  return enumMap
-}
-
 /**
  * Creates a SafeEnum from an array or tuple of string literals.
  *
