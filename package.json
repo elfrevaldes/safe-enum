@@ -1,6 +1,6 @@
 {
   "name": "type-safe-enum",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "description": "A type-safe, flexible enum factory for TypeScript with runtime validation and type inference",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,7 +10,7 @@
     "prepublishOnly": "npm test && npm run build",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --config vitest.config.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint src/index.ts src/safe-enum-factory.ts src/safe-enum.test.ts --max-warnings=0"
   },
@@ -46,6 +46,7 @@
     "@types/node": "^22.15.23",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "@vitest/coverage-v8": "^3.1.4",
     "@vitest/ui": "^3.1.4",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.5",

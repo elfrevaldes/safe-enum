@@ -33,6 +33,41 @@ describe("SafeEnum", () => {
   }
   
   describe("Basic functionality", () => {
+    it("should ensure enum value properties are immutable", () => {
+      // This tests the immutability logic in lines 67-73
+      // Create an object with a non-writable value property
+      const obj = { value: 'test', index: 0 };
+      Object.defineProperty(obj, 'value', {
+        value: 'test',
+        writable: false,
+        configurable: true,
+        enumerable: true
+      });
+      
+      // Verify it's not writable initially
+      const initialDescriptor = Object.getOwnPropertyDescriptor(obj, 'value');
+      expect(initialDescriptor?.writable).toBe(false);
+      
+      // Create enum with this object
+      const TestImmutable = CreateSafeEnum({ TEST: obj });
+      
+      // The value property should still be non-writable
+      const descriptor = Object.getOwnPropertyDescriptor(TestImmutable.TEST, 'value');
+      expect(descriptor?.writable).toBe(false);
+      expect(descriptor?.configurable).toBe(false);
+      expect(descriptor?.enumerable).toBe(true);
+      expect(TestImmutable.TEST.value).toBe('test');
+      
+      // Attempting to modify should throw in strict mode or fail silently in non-strict
+      expect(() => {
+        // @ts-expect-error - Testing immutability
+        TestImmutable.TEST.value = 'modified';
+      }).toThrow(TypeError);
+      
+      // Verify the value wasn't changed
+      expect(TestImmutable.TEST.value).toBe('test');
+    });
+
     it("should create enum with correct values", () => {
       expect(TestEnum.FOO).toEqual(
         expect.objectContaining({
@@ -472,6 +507,28 @@ describe("SafeEnum", () => {
       })
     })
   })
+
+  describe("Error Handling", () => {
+    it("should throw error when enum entry is missing an index", () => {
+      // This tests the error handling in lines 143-144
+      // Create a function that will be called with an object that has a missing index
+      const createEnumWithMissingIndex = () => {
+        // This is a bit of a hack to test the error case
+        // We're creating an object that will cause the destructuring to fail
+        const badEnumMap = {
+          FOO: { value: 'foo', index: 0 },
+          // Create a getter that returns an object without an index property
+          get BAR() {
+            return { value: 'bar' };
+          }
+        };
+        return CreateSafeEnum(badEnumMap);
+      };
+      
+      // The error should be thrown during enum creation
+      expect(createEnumWithMissingIndex).toThrow("Missing index for enum key: BAR");
+    });
+  });
 
   describe("Edge Cases", () => {
     it("should create enum from array of strings using CreateSafeEnumFromArray", () => {

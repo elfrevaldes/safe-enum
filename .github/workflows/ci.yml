@@ -37,15 +37,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test
-        run: npm test
+      - name: Test with coverage
+        run: npm run test:coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage/coverage-final.json
-          fail_ci_if_error: false
 
   release:
     name: Release
@@ -53,11 +51,11 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     environment: production
-    
+
     permissions:
       contents: write
       packages: write
-      
+
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -118,7 +116,7 @@ jobs:
         run: |
           # Configure npm to use the environment variable for auth
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-          
+
       - name: Publish to npm
         run: |
           # Try to publish
