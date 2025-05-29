@@ -11,6 +11,25 @@ export type SafeEnumValue<T extends Record<string, SafeEnumBase>> = {
     readonly value: T[K]["value"]
     readonly index: T[K]["index"] extends number ? T[K]["index"] : number
     isEqual(other: SafeEnumValue<T> | SafeEnumValue<T>[]): boolean
+    /**
+     * Returns a string representation of the enum value.
+     * @returns A string in the format "KEY: (value), index: N"
+     * @example
+     * ```typescript
+     * console.log(Status.PENDING.toString()); // "PENDING: pending, index: 0"
+     * ```
+     */
+    toString(): string
+    /**
+     * Converts the enum value to a JSON-safe object.
+     * @returns A plain object with the enum's key, value, and index.
+     * @example
+     * ```typescript
+     * const json = Status.PENDING.toJSON();
+     * console.log(json); // { key: 'PENDING', value: 'pending', index: 0 }
+     * ```
+     */
+    toJSON(): { key: string, value: string, index: number }
   }
 }[keyof T]
 

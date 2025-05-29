@@ -1,10 +1,5 @@
 import type { SafeEnum, SafeEnumBase, SafeEnumValue } from "./types/interfaces/safe-enum"
 
-
-/**
- * Converts an array of strings into an enum map with uppercase keys and numeric indices.
- *
- * Each string in the input array becomes an enum member with the key as the uppercased string,
 /**
  * Creates a SafeEnum from an array or tuple of string literals.
  *
@@ -122,6 +117,16 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
         if (!other) return false
         const others = Array.isArray(other) ? other : [other]
         return others.some((item) => item.value === value)
+      },
+      toString(): string {
+        return `${key}: (${value}), index: ${index}`
+      },
+      toJSON() {
+        return {
+          key,
+          value,
+          index
+        }
       }
     } as SafeEnumValue<T>
 

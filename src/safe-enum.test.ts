@@ -380,6 +380,45 @@ describe("SafeEnum", () => {
     })
   })
 
+  describe("String Representation", () => {
+    it("should provide a meaningful string representation with toString()", () => {
+      expect(TestEnum.FOO.toString()).toBe("FOO: (foo), index: 0")
+      expect(TestEnum.BAR.toString()).toBe("BAR: (bar), index: 1")
+      expect(TestEnum.BAZ.toString()).toBe("BAZ: (baz), index: 2")
+    })
+
+    it("should be called automatically in string interpolation", () => {
+      const str = `Status: ${TestEnum.FOO}`
+      expect(str).toContain("FOO: (foo), index: 0")
+    })
+
+    it("should provide a JSON-serializable object with toJSON()", () => {
+      expect(TestEnum.FOO.toJSON()).toEqual({
+        key: "FOO",
+        value: "foo",
+        index: 0
+      })
+
+      expect(TestEnum.BAR.toJSON()).toEqual({
+        key: "BAR",
+        value: "bar",
+        index: 1
+      })
+    })
+
+    it("should be used by JSON.stringify()", () => {
+      const json = JSON.stringify({ status: TestEnum.FOO })
+      const parsed = JSON.parse(json)
+      expect(parsed).toEqual({
+        status: {
+          key: "FOO",
+          value: "foo",
+          index: 0
+        }
+      })
+    })
+  })
+
   describe("Edge Cases", () => {
     it("should create enum from array of strings using CreateSafeEnumFromArray", () => {
       const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
