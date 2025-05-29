@@ -52,6 +52,14 @@ jobs:
     needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
+    environment: production
+    
+    permissions:
+      contents: write
+      packages: write
+      
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     steps:
       - uses: actions/checkout@v3
@@ -108,9 +116,9 @@ jobs:
 
       - name: Configure npm
         run: |
-          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          npm config set registry=https://registry.npmjs.org/
-
+          # Configure npm to use the environment variable for auth
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+          
       - name: Publish to npm
         run: |
           # Try to publish
@@ -121,6 +129,7 @@ jobs:
               echo "::warning::Cannot republish 1.0.0 within 24 hours of unpublishing. Please wait or use a new version."
               exit 0  # Don't fail the build for this case
             else
+              echo "::error::Failed to publish package"
               exit 1  # Fail for other errors
             fi
           fi
