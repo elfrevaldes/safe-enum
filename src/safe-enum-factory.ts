@@ -56,11 +56,12 @@ export function CreateSafeEnumFromArray<
 export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
   enumMap: T
 ): SafeEnum<T> & { [K in keyof T]: SafeEnumValue<T> } {
-  // Make all existing indexes immutable and collect used indexes
+  // Ensure values are immutable and collect used indexes
   const usedIndexes = new Set<number>()
+  let nextIndex = 0
 
   // Process each enum value to ensure proper indexing
-  Object.entries(enumMap).forEach(([key, obj]) => {
+  for (const [key, obj] of Object.entries(enumMap)) {
     // Ensure value is immutable
     if (!Object.getOwnPropertyDescriptor(obj, "value")?.writable) {
       Object.defineProperty(obj, "value", {
@@ -73,7 +74,6 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
 
     // Handle index assignment if not provided
     if (obj.index === undefined) {
-      let nextIndex = 0
       while (usedIndexes.has(nextIndex)) nextIndex++
       Object.defineProperty(obj, "index", {
         value: nextIndex,
@@ -82,8 +82,18 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
         enumerable: true
       })
       usedIndexes.add(nextIndex)
-    } else if (!usedIndexes.has(obj.index)) {
-      // Only add the index if it's not a duplicate
+    } else {
+      // Check for duplicate index
+      if (usedIndexes.has(obj.index)) {
+        const conflictingKey = Object.entries(enumMap).find(
+          ([k, v]) => v.index === obj.index && k !== key
+        )?.[0]
+        throw new Error(
+          `Duplicate index ${obj.index} in enum map: ` +
+          `'${key}' conflicts with '${conflictingKey || "unknown"}'`
+        )
+      }
+      // Make index immutable
       Object.defineProperty(obj, "index", {
         value: obj.index,
         writable: false,
@@ -91,18 +101,8 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
         enumerable: true
       })
       usedIndexes.add(obj.index)
-    } else {
-      // Find the conflicting key for better error reporting
-      const conflictingKey = Object.entries(enumMap).find(
-        ([k, v]) => v.index === obj.index && k !== key
-      )?.[0]
-
-      throw new Error(
-        `Duplicate index ${obj.index} found in enum map: ` +
-          `'${key}' conflicts with '${conflictingKey || "unknown"}'`
-      )
     }
-  })
+  }
   // Create a map from value to enum entry for faster lookups
   const valueToEntry = new Map<string, SafeEnumValue<T>>()
   const indexToEntry = new Map<number, SafeEnumValue<T>>()
@@ -215,25 +215,26 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
     return values.every((value) => value?.value === firstValue)
   }
 
-  // Create the factory object with all methods and values
+  // Create the enum object with all methods
   const factory = {
-    ...enumValues,
-    fromValue,
+    ...Object.fromEntries(
+      Object.entries(enumMap).map(([key]) => [key, enumValues[key as keyof T]])
+    ),
+    // Add all methods
     fromIndex,
+    fromValue,
     fromKey,
-    isEnumValue,
-    isEqual,
     hasValue,
     hasKey,
     hasIndex,
-    values: () => [...enumValuesArray],
+    isEnumValue,
+    isEqual,
     keys: () => Object.keys(enumValues) as (keyof T & string)[],
+    getEntries: () => [...enumValuesArray],
+    values: () => enumValuesArray.map(e => e.value),
+    indexes: () => enumValuesArray.map(e => e.index),
     entries: () => Object.entries(enumValues) as [keyof T & string, SafeEnumValue<T>][],
-    [Symbol.iterator]: function* () {
-      for (const value of enumValuesArray) {
-        yield value
-      }
-    }
+    [Symbol.iterator]: () => enumValuesArray[Symbol.iterator]()
   } as const as unknown as SafeEnum<T> & { [K in keyof T]: SafeEnumValue<T> }
 
   return Object.freeze(factory)

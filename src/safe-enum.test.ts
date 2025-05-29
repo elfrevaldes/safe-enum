@@ -242,7 +242,7 @@ describe("SafeEnum", () => {
 
     describe("Iterator", () => {
       it("should be iterable with for...of", () => {
-        const values = Array.from(TestEnum.values())
+        const values = Array.from(TestEnum.getEntries())
         expect(values).toHaveLength(3)
         expect(values).toContain(TestEnum.FOO)
         expect(values).toContain(TestEnum.BAR)
@@ -250,7 +250,7 @@ describe("SafeEnum", () => {
       })
 
       it("should work with spread operator", () => {
-        const values = [...TestEnum.values()]
+        const values = [...TestEnum.getEntries()]
         expect(values).toHaveLength(3)
         expect(values).toContain(TestEnum.FOO)
       })
@@ -380,6 +380,60 @@ describe("SafeEnum", () => {
     })
   })
 
+  describe("Utility Methods", () => {
+    describe("values()", () => {
+      it("should return an array of all enum values", () => {
+        const values = TestEnum.values()
+        expect(values).toHaveLength(3)
+        expect(values).toContain("foo")
+        expect(values).toContain("bar")
+        expect(values).toContain("baz")
+      })
+
+      it("should return an empty array for empty enums", () => {
+        const EmptyEnum = CreateSafeEnum({} as const)
+        expect(EmptyEnum.values()).toEqual([])
+      })
+    })
+
+    describe("getEntries()", () => {
+      it("should return an array of all enum entries", () => {
+        const entries = TestEnum.getEntries()
+        expect(entries).toHaveLength(3)
+        expect(entries.map(e => e.value)).toContain("foo")
+        expect(entries.map(e => e.key)).toContain("FOO")
+      })
+    })
+
+    describe("indexes()", () => {
+      it("should return an array of all enum indices", () => {
+        const indices = TestEnum.indexes()
+        expect(indices).toHaveLength(3)
+        expect(indices).toContain(0)
+        expect(indices).toContain(1)
+        expect(indices).toContain(2)
+      })
+
+      it("should handle custom indices", () => {
+        const CustomEnum = CreateSafeEnum({
+          A: { value: "a", index: 10 },
+          B: { value: "b", index: 20 },
+          C: { value: "c" } // Auto-assigned
+        } as const)
+        const indices = CustomEnum.indexes()
+        expect(indices).toHaveLength(3)
+        expect(indices).toContain(10)
+        expect(indices).toContain(20)
+        expect(indices).toContain(CustomEnum.C.index)
+      })
+
+      it("should return an empty array for empty enums", () => {
+        const EmptyEnum = CreateSafeEnum({} as const)
+        expect(EmptyEnum.indexes()).toEqual([])
+      })
+    })
+  })
+
   describe("String Representation", () => {
     it("should provide a meaningful string representation with toString()", () => {
       expect(TestEnum.FOO.toString()).toBe("FOO: (foo), index: 0")
@@ -460,8 +514,9 @@ describe("SafeEnum", () => {
       expect(SingleEnum.keys()).toEqual(["ONLY"])
       expect(SingleEnum.entries()).toEqual([["ONLY", SingleEnum.ONLY]])
 
-      const singleValues = Array.from(SingleEnum.values())
+      const singleValues = SingleEnum.getEntries()
       expect(singleValues).toEqual([SingleEnum.ONLY])
+      expect(SingleEnum.values()).toEqual(['only'])
     })
 
     it("should handle sparse indices", () => {
@@ -474,12 +529,13 @@ describe("SafeEnum", () => {
       expect(SparseEnum.C.index).not.toBe(10);
       expect(SparseEnum.C.index).not.toBe(20);
 
-      const values: { index: number }[] = Array.from(SparseEnum.values());
+      const values = SparseEnum.getEntries();
       const indices = values.map(v => v.index);
       expect(indices).toHaveLength(3);
       expect(indices).toContain(10);
       expect(indices).toContain(20);
       expect(indices).toContain(SparseEnum.C.index);
+      expect(SparseEnum.values()).toEqual(['a', 'b', 'c']);
     });
 
     it("should provide helpful error for duplicate indices", () => {
@@ -488,7 +544,7 @@ describe("SafeEnum", () => {
           A: { value: "a", index: 1 },
           B: { value: "b", index: 1 } // Duplicate index
         } as const)
-      }).toThrow("Duplicate index 1 found in enum map: 'B' conflicts with 'A'")
+      }).toThrow("Duplicate index 1 in enum map: 'B' conflicts with 'A'")
     })
   })
 })

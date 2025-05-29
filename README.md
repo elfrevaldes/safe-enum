@@ -168,15 +168,53 @@ const isValid = adminRoles.some(role => role.isEqual(UserRole.ADMIN));
 | `hasIndex(index: number)` | Check if index exists | `UserRole.hasIndex(0)` |
 | `isEnumValue(value: any)` | Type guard for enum values | `if (UserRole.isEnumValue(value)) { ... }` |
 | `isEqual(value: SafeEnumValue<T> | SafeEnumValue<T>[])` | Compare enum values | `UserRole.isEqual([UserRole.ADMIN, UserRole.EDITOR])` |
-| `values()` | Get all enum values | `UserRole.values()` |
-| `keys()` | Get all enum keys | `UserRole.keys()` |
-| `entries()` | Get all [key, value] pairs | `UserRole.entries()` |
+| `values(): string[]` | Get all enum values as strings | `UserRole.values()` |
+| `indexes(): number[]` | Get all enum indices as numbers | `UserRole.indexes()` |
+| `getEntries(): SafeEnumValue<T>[]` | Get all enum entries (full value objects) | `UserRole.getEntries()` |
+| `keys(): string[]` | Get all enum keys as strings | `UserRole.keys()` |
+| `entries(): [string, SafeEnumValue<T>][]` | Get all [key, value] pairs | `UserRole.entries()` |
+| `[Symbol.iterator]()` | Iterate over enum values (same as `getEntries()`) | `[...UserRole]` |
 
 ### Instance Methods
 
 | Method | Description | Example |
 |--------|-------------|---------|
-| `isEqual(other)` | Compare with another enum value | `UserRole.ADMIN.isEqual(otherRole)` |
+| `isEqual(other: SafeEnumValue<T> | SafeEnumValue<T>[]): boolean` | Compare with another enum value or array of values | `UserRole.ADMIN.isEqual(otherRole)` |
+| `toString(): string` | Get string representation in format `"KEY: (value), index: N"` | `UserRole.ADMIN.toString()` |
+| `toJSON(): { key: string, value: string, index: number }` | Get JSON-serializable object | `UserRole.ADMIN.toJSON()` |
+
+## Examples
+
+### Working with Values and Indices
+
+```typescript
+const Colors = CreateSafeEnum({
+  RED: { value: 'red', index: 1 },
+  GREEN: { value: 'green', index: 2 },
+  BLUE: { value: 'blue' }  // auto-assigned index: 3
+} as const);
+
+// Get all values as strings
+const colorValues = Colors.values();
+// Returns: ['red', 'green', 'blue']
+
+// Get all indices
+const colorIndices = Colors.indexes();
+// Returns: [1, 2, 3]
+
+// Get full enum value objects
+const colorEntries = Colors.getEntries();
+// Returns: [
+//   { key: 'RED', value: 'red', index: 1, ... },
+//   { key: 'GREEN', value: 'green', index: 2, ... },
+//   { key: 'BLUE', value: 'blue', index: 3, ... }
+// ]
+
+// Iterate over entries with full type safety
+for (const entry of Colors.getEntries()) {
+  console.log(`${entry.key}: ${entry.value} (${entry.index})`);
+}
+```
 
 ## Real-World Examples
 
@@ -268,8 +306,9 @@ function FormComponent() {
 
 SafeEnum is designed to be lightweight and efficient:
 
-- **O(1) lookups** for all operations
-- **Minimal memory footprint** - only stores what's necessary
+- **Fast lookups** - O(1) for `fromValue()`, `fromIndex()`, `hasValue()`, `hasIndex()`, and `hasKey()`
+- **Efficient iteration** - O(n) for `getEntries()`, `entries()`, `values()`, and `indexes()`
+- **Minimal memory footprint** - uses Maps for O(1) lookups
 - **No runtime overhead** - all type information is removed during compilation
 
 ## License

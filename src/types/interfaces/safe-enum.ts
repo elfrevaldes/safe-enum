@@ -176,4 +176,34 @@ export interface SafeEnum<T extends Record<string, SafeEnumBase> = any> {
    * @returns An array of tuples containing the key and value for each enum entry.
    */
   entries(): [keyof T & string, SafeEnumValue<T>][]
+
+  /**
+   * Returns an array of all enum entries (full value objects).
+   * @returns An array of SafeEnumValue objects containing all properties.
+   * @example
+   * ```typescript
+   * const entries = MyEnum.getEntries(); // [SafeEnumValue, SafeEnumValue, ...]
+   * ```
+   */
+  getEntries(): SafeEnumValue<T>[]
+
+  /**
+   * Returns an array of all enum values as strings.
+   * @returns An array of string values from the enum.
+   * @example
+   * ```typescript
+   * const values = MyEnum.values(); // ['foo', 'bar', 'baz']
+   * ```
+   */
+  values(): string[]
+
+  /**
+   * Returns an array of all enum indices.
+   * @returns An array of numbers representing the indices.
+   * @example
+   * ```typescript
+   * const indices = MyEnum.indexes(); // [0, 1, 2]
+   * ```
+   */
+  indexes(): number[]
 }
