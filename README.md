@@ -167,19 +167,18 @@ const isValid = adminRoles.some(role => role.isEqual(UserRole.ADMIN));
 | `hasKey(key: string)` | Check if key exists | `UserRole.hasKey('ADMIN')` |
 | `hasIndex(index: number)` | Check if index exists | `UserRole.hasIndex(0)` |
 | `isEnumValue(value: any)` | Type guard for enum values | `if (UserRole.isEnumValue(value)) { ... }` |
-| `isEqual(value: SafeEnumValue<T> | SafeEnumValue<T>[])` | Compare enum values | `UserRole.isEqual([UserRole.ADMIN, UserRole.EDITOR])` |
+| <div align="left">`isEqual(`<br>&nbsp;&nbsp;&nbsp;&nbsp;`value: SafeEnumValue<T> \| `<br>&nbsp;&nbsp;&nbsp;&nbsp;`SafeEnumValue<T>[]`<br>): boolean`</div> | Compare enum values | `UserRole.isEqual([UserRole.ADMIN, UserRole.EDITOR]): boolean` |
 | `values(): string[]` | Get all enum values as strings | `UserRole.values()` |
 | `indexes(): number[]` | Get all enum indices as numbers | `UserRole.indexes()` |
 | `getEntries(): SafeEnumValue<T>[]` | Get all enum entries (full value objects) | `UserRole.getEntries()` |
 | `keys(): string[]` | Get all enum keys as strings | `UserRole.keys()` |
 | `entries(): [string, SafeEnumValue<T>][]` | Get all [key, value] pairs | `UserRole.entries()` |
-| `[Symbol.iterator]()` | Iterate over enum values (same as `getEntries()`) | `[...UserRole]` |
 
 ### Instance Methods
 
 | Method | Description | Example |
 |--------|-------------|---------|
-| `isEqual(other: SafeEnumValue<T> | SafeEnumValue<T>[]): boolean` | Compare with another enum value or array of values | `UserRole.ADMIN.isEqual(otherRole)` |
+| <div align="left">`isEqual(`<br>&nbsp;&nbsp;&nbsp;&nbsp;`other: SafeEnumValue<T> \| `<br>&nbsp;&nbsp;&nbsp;&nbsp;`SafeEnumValue<T>[]`<br>): boolean`</div> | Compare with another enum value or array of values | `UserRole.ADMIN.isEqual(otherRole)` |
 | `toString(): string` | Get string representation in format `"KEY: (value), index: N"` | `UserRole.ADMIN.toString()` |
 | `toJSON(): { key: string, value: string, index: number }` | Get JSON-serializable object | `UserRole.ADMIN.toJSON()` |
 
