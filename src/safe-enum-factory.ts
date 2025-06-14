@@ -25,7 +25,24 @@ export function CreateSafeEnum(
   const usedIndexes = new Set<number>()
   let nextIndex = 0
 
-  // Process each enum value to ensure proper indexing
+  // First pass: collect all explicitly defined indexes and ensure no duplicates
+  const indexToKey = new Map<number, string>();
+  for (const [key, obj] of Object.entries(enumMap)) {
+    if (obj.index !== undefined) {
+      if (indexToKey.has(obj.index)) {
+        throw new Error(
+          `Duplicate index ${obj.index} in enum map: ` +
+          `'${key}' conflicts with '${indexToKey.get(obj.index)}'`
+        );
+      }
+      indexToKey.set(obj.index, key);
+      usedIndexes.add(obj.index);
+      // Update nextIndex to be the max of current nextIndex and (index + 1)
+      nextIndex = Math.max(nextIndex, obj.index + 1);
+    }
+  }
+
+  // Second pass: process all enum values
   for (const [key, obj] of Object.entries(enumMap)) {
     // Ensure value is immutable
     if (!Object.getOwnPropertyDescriptor(obj, "value")?.writable) {
@@ -34,38 +51,31 @@ export function CreateSafeEnum(
         writable: false,
         configurable: false,
         enumerable: true
-      })
+      });
     }
 
     // Handle index assignment if not provided
     if (obj.index === undefined) {
-      while (usedIndexes.has(nextIndex)) nextIndex++
+      // Find the next available index starting from nextIndex
+      while (usedIndexes.has(nextIndex)) {
+        nextIndex++;
+      }
       Object.defineProperty(obj, "index", {
         value: nextIndex,
         writable: false,
         configurable: false,
         enumerable: true
-      })
-      usedIndexes.add(nextIndex)
+      });
+      usedIndexes.add(nextIndex);
+      nextIndex++; // Move to next available index for next auto-assignment
     } else {
-      // Check for duplicate index
-      if (usedIndexes.has(obj.index)) {
-        const conflictingKey = Object.entries(enumMap).find(
-          ([k, v]) => v.index === obj.index && k !== key
-        )?.[0]
-        throw new Error(
-          `Duplicate index ${obj.index} in enum map: ` +
-          `'${key}' conflicts with '${conflictingKey || "unknown"}'`
-        )
-      }
-      // Make index immutable
+      // Make index immutable (duplicate check already done in first pass)
       Object.defineProperty(obj, "index", {
         value: obj.index,
         writable: false,
         configurable: false,
         enumerable: true
-      })
-      usedIndexes.add(obj.index)
+      });
     }
   }
   // Create a map from value to enum entry for faster lookups

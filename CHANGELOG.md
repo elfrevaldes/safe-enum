@@ -5,7 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1] - 2025-06-13
+## [1.0.5] - 2025-06-13
+
+### Added
+- Enhanced test coverage for mixed explicit and auto-indexed enums
+- Added more detailed error messages for duplicate index detection
+
+### Fixed
+- Fixed auto-indexing logic to correctly handle mixed explicit and implicit indices
+- Resolved issue where auto-indexing would start from 0 even when higher indices were already in use
+- Improved type safety in test files with proper null checks
+- Fixed variable naming consistency in test cases
+
+### Changed
+- Updated test assertions to better document expected behavior
+- Improved code organization and comments for better maintainability
+
+## [1.0.4] - 2025-06-13
 
 ### Added
 - New `CreateSafeEnumFromArray` helper for creating enums from string arrays

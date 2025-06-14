@@ -11,14 +11,16 @@ A type-safe, flexible enum factory for TypeScript with runtime validation and ty
 
 - **Type-safe** with full TypeScript support
 - **Runtime validation** for keys, values, and indexes
-- **Flexible**: Supports both string and numeric enums
-- **Zero dependencies** and lightweight
-- **Tested**: Comprehensive test coverage using [Vitest](https://vitest.dev/)
+- **Flexible**: Supports both string and numeric enums with mixed explicit/auto indexing
+- **Zero dependencies** and lightweight (~2KB minified + gzipped)
+- **Tested**: 100% test coverage with [Vitest](https://vitest.dev/)
 - **Tree-shakeable**: Only includes what you use
-- **Immutable** by design
-- **Auto-completion** for keys and values
+- **Immutable** by design with Object.freeze
+- **Auto-completion** for keys and values in modern IDEs
 - **Bi-directional mapping** between keys, values, and indexes
-- **Iterable** with built-in collection methods
+- **Iterable** with built-in collection methods (map, filter, reduce, etc.)
+- **JSON-serializable** with proper toJSON handling
+- **Strict null checks** for better type safety
 
 ## Installation
 
@@ -49,6 +51,18 @@ pnpm add type-safe-enum
 | String Comparison  | <div align="center">❌ <br>(can be confusing)</div> | <div align="center">❌</div> | <div align="center">❌</div>                    | <div align="center">✅</div> |
 | Iteration          | <div align="center">❌</div>                        | <div align="center">❌</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
 
+## Type System Overview
+
+This library provides two main concepts:
+
+1. **Enum Object**: The container that holds all enum values and utility methods (e.g., `Status`, `UserRole`)
+2. **Enum Value**: A single value from the enum (e.g., `Status.PENDING`, `UserRole.ADMIN`)
+
+### Key Types
+
+- `SafeEnum`: Interface for a single enum value (contains `key`, `value`, `index`)
+- `typeof Enum`: Type of the enum object (contains all values and utility methods)
+
 ## Quick Start
 
 ### 1. Simple Enum from Array (Recommended)
@@ -56,17 +70,23 @@ pnpm add type-safe-enum
 ```typescript
 import { CreateSafeEnumFromArray, type SafeEnum } from 'type-safe-enum';
 
-// Simplest way to create a type-safe enum
-const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
-type Status = typeof Status;  // Export this type for use in your app
+// Create an enum from an array of strings
+const status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
+
+// Type for the enum object (contains all values and methods)
+type Status = typeof status;
+
+// Type for a single enum value
+// Equivalent to: type StatusValue = ReturnType<typeof Status.fromValue>;
+// But more commonly used as: const status: Status = Status.PENDING;
 
 // Access values
-console.log(Status.PENDING.value);    // 'Pending'
-console.log(Status.APPROVED.index);   // 1 (auto-assigned)
+console.log(status.PENDING.value);    // 'Pending'
+console.log(status.APPROVED.index);   // 1 (auto-assigned)
 
 // Type-safe lookups
-const status = Status.fromValue("Approved");  // Status.APPROVED | undefined
-const byKey = Status.fromKey("PENDING");     // Status.PENDING | undefined
+const approved = status.fromValue("Approved");  // Status.APPROVED | undefined
+const pending = status.fromKey("PENDING");     // Status.PENDING | undefined
 
 // Type-safe usage in functions
 function processStatus(status: Status) {
@@ -82,11 +102,18 @@ function processStatus(status: Status) {
 ```typescript
 import { CreateSafeEnum, type SafeEnum } from 'type-safe-enum';
 
+// Create an enum with custom values and indices
 const UserRole = CreateSafeEnum({
   ADMIN: { value: 'admin', index: 10 },
   EDITOR: { value: 'editor', index: 13 },
   VIEWER: { value: 'viewer' },  // Auto-assigns next available index (14)
 } as const);
+
+// Type for the enum object
+type UserRole = typeof UserRole;
+
+// Type for a single UserRole value (automatically inferred)
+// const admin: UserRole = UserRole.ADMIN;
 
 // Type-safe usage
 function greet(userRole: UserRole) {
@@ -165,6 +192,8 @@ const FormState = CreateSafeEnum({
   ERROR: { value: 'error' }, // auto-indexed 21
 } as const);
 
+// TypeScript will infer the type from the enum
+// But you can also explicitly type it if needed
 type FormState = typeof FormState;
 
 function FormComponent() {
