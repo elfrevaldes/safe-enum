@@ -1,209 +1,138 @@
 // Base interface for enum values passed to CreateSafeEnum
 export interface SafeEnumBase {
-  readonly value: string
-  index?: number
+  readonly value: string;
+  readonly index?: number; // Made optional to support auto-indexing
 }
 
-// Type helper to extract literal types from an enum map
-export type SafeEnumValue<T extends Record<string, SafeEnumBase>> = {
-  [K in keyof T]: {
-    readonly key: K & string
-    readonly value: T[K]["value"]
-    readonly index: T[K]["index"] extends number ? T[K]["index"] : number
-    isEqual(other: SafeEnumValue<T> | SafeEnumValue<T>[]): boolean
-    /**
-     * Returns a string representation of the enum value.
-     * @returns A string in the format "KEY: (value), index: N"
-     * @example
-     * ```typescript
-     * console.log(Status.PENDING.toString()); // "PENDING: pending, index: 0"
-     * ```
-     */
-    toString(): string
-    /**
-     * Converts the enum value to a JSON-safe object.
-     * @returns A plain object with the enum's key, value, and index.
-     * @example
-     * ```typescript
-     * const json = Status.PENDING.toJSON();
-     * console.log(json); // { key: 'PENDING', value: 'pending', index: 0 }
-     * ```
-     */
-    toJSON(): { key: string, value: string, index: number }
-  }
-}[keyof T]
-
-export type SafeEnumWithMembers<T extends Record<string, SafeEnumBase>> = SafeEnum<T> & { [K in keyof T]: SafeEnumValue<T> };
-
 /**
- * SafeEnum is an interface that represents a type-safe enum with runtime validation.
- * SafeEnums are created using the CreateSafeEnum function.
- *
+ * The SafeEnum type represents a type-safe enum value with lookup methods.
+ * Each enum value has a key, value, and index, along with utility methods.
+ * 
  * @example
  * ```typescript
- * // Basic usage with auto-indexing
  * const Status = CreateSafeEnum({
- *   PENDING: { value: 'pending' },     // index: 0
- *   APPROVED: { value: 'approved' },   // index: 1
- *   REJECTED: { value: 'rejected' }    // index: 2
+ *   PENDING: { value: 'pending', index: 0 },
+ *   APPROVED: { value: 'approved', index: 1 },
+ *   REJECTED: { value: 'rejected', index: 2 }
  * } as const);
- *
- * // Mixed explicit and auto-indexing
- * const MixedEnum = CreateSafeEnum({
- *   FIRST: { value: 'first', index: 10 },  // explicit index
- *   SECOND: { value: 'second' },           // auto-assigned: 11
- *   THIRD: { value: 'third', index: 20 },  // explicit index
- *   FOURTH: { value: 'fourth' }            // auto-assigned: 21
- * } as const);
- *
- * // Type-safe access
- * type StatusType = SafeEnumValue<typeof Status>;
- * const status1: StatusType = Status.PENDING;  // { key: 'PENDING', value: 'pending', index: 0 }
- *
- * // Lookup methods (all return undefined for invalid inputs)
- * const fromNumber = Status.fromNumber(0);     // Status.PENDING
- * const fromString = Status.fromString('approved'); // Status.APPROVED
- * const fromKey = Status.fromKey('REJECTED');  // Status.REJECTED
- *
- * // Type guard
- * if (Status.isEnumValue(someValue)) {
- *   // someValue is properly typed as StatusType here
- * }
- *
- * // Get all values
- * const allStatuses = Status.values();
- *
- * // Type narrowing with isEqual
- * if (Status.PENDING.isEqual(someValue)) {
- *   // someValue is narrowed to Status.PENDING
- * }
- *
- * // Compare with multiple values
- * const isPendingOrApproved = Status.PENDING.isEqual([
- *   Status.PENDING,
- *   Status.APPROVED
- * ]); // true
- *
- * // Export pattern
- * export type Status = SafeEnumValue<typeof Status>;
- * export { Status as StatusEnum } from './path-to-enum';
+ * 
+ * // Type of an individual enum value
+ * const status: SafeEnum = Status.PENDING;
  * ```
  */
-export interface SafeEnum<T extends Record<string, SafeEnumBase> = any> {
-  /**
-   * Gets an enum value by its index.
-   * @param index The index to look up.
-   * @returns The specific enum value if found, otherwise undefined.
+export interface SafeEnum {
+  /** The string key of the enum value (e.g., 'PENDING') */
+  readonly key: string;
+  
+  /** The string value of the enum (e.g., 'pending') */
+  readonly value: string;
+  
+  /** 
+   * The numeric index of the enum.
+   * This is optional and will be auto-assigned if not provided.
    */
-  fromIndex<N extends number>(index: N): Extract<SafeEnumValue<T>, { index: N }> | undefined
-
+  readonly index?: number;
+  
   /**
-   * Checks if the enum contains a specific string value.
-   * @param value The string value to look up.
-   * @returns true if the value is found, otherwise false.
+   * Gets an enum value by its index
+   * @param num The index to look up
+   * @returns The matching enum value or undefined if not found
    */
-  hasValue(value: string): boolean
-
+  fromIndex(num: number): SafeEnum | undefined;
+  
   /**
-   * Checks if the enum contains a specific key.
-   * @param key The key to look up.
-   * @returns true if the key is found, otherwise false.
+   * Gets an enum value by its string value
+   * @param str The string value to look up
+   * @returns The matching enum value or undefined if not found
    */
-  hasKey(key: string): boolean
-
+  fromValue(str: string): SafeEnum | undefined;
+  
   /**
-   * Checks if the enum contains a specific index.
-   * @param index The index to look up.
-   * @returns true if the index is found, otherwise false.
+   * Gets an enum value by its key
+   * @param key The key to look up (case-sensitive)
+   * @returns The matching enum value or undefined if not found
    */
-  hasIndex(index: number): boolean
-
+  fromKey(key: string): SafeEnum | undefined;
+  
   /**
-   * Gets an enum value by its value property (string).
-   * @param value The string value to look up.
-   * @returns The specific enum value if found, otherwise undefined.
+   * Checks if a value exists in the enum
+   * @param value The value to check
+   * @returns true if the value exists in the enum, false otherwise
    */
-  fromValue<S extends string>(value: S): Extract<SafeEnumValue<T>, { value: S }> | undefined
-
+  hasValue(value: string): boolean;
+  
   /**
-   * Gets an enum value by its key.
-   * @param key The key to look up.
-   * @returns The specific enum value if found, otherwise undefined.
+   * Checks if a key exists in the enum
+   * @param key The key to check
+   * @returns true if the key exists in the enum, false otherwise
    */
-  fromKey<K extends keyof T & string>(key: K): Extract<SafeEnumValue<T>, { key: K }> | undefined
-
+  hasKey(key: string): boolean;
+  
   /**
-   * Checks if this enum value equals another value or any value in an array.
-   *
-   * @example
-   * ```typescript
-   * // Single value comparison
-   * Status.PENDING.isEqual(Status.PENDING); // true
-   *
-   * // Array comparison (OR operation)
-   * Status.PENDING.isEqual([Status.PENDING, Status.APPROVED]); // true
-   * Status.PENDING.isEqual([Status.REJECTED, Status.APPROVED]); // false
-   *
-   * // TypeScript will enforce type safety
-   * Status.PENDING.isEqual(OtherEnum.KEY); // Type error
-   * ```
-   *
-   * @param other - The value or array of values to compare against.
-   * @returns true if this value equals any of the provided values.
+   * Checks if an index exists in the enum
+   * @param index The index to check
+   * @returns true if the index exists in the enum, false otherwise
    */
-  isEqual(other: SafeEnumValue<T> | SafeEnumValue<T>[]): boolean
-
+  hasIndex(index: number): boolean;
+  
   /**
-   * Returns all enum values as an array.
+   * Type guard to check if a value is a valid enum value
+   * @param value The value to check
+   * @returns true if the value is a valid enum value, false otherwise
    */
-  values(): SafeEnumValue<T>[]
-
+  isEnumValue(value: unknown): value is SafeEnum;
+  
   /**
-   * Type guard to check if a value is a valid enum value.
-   * @param value The value to check.
-   * @returns true if the value is a valid enum value.
+   * Compares this enum value with another value or array of values
+   * @param other The value or array of values to compare with
+   * @returns true if this value matches any of the provided values
    */
-  isEnumValue(value: unknown): value is SafeEnumValue<T>
-
+  isEqual(other: SafeEnum | SafeEnum[]): boolean;
+  
   /**
-   * Returns an array of all enum keys.
-   * @returns An array of string literal types representing the enum keys.
+   * Returns a string representation of the enum value
+   * @returns A string in the format "KEY: (value), index: N"
    */
-  keys(): (keyof T & string)[]
-
+  toString(): string;
+  
   /**
-   * Returns an array of [key, value] pairs for all enum entries.
-   * @returns An array of tuples containing the key and value for each enum entry.
+   * Converts the enum value to a JSON-safe object
+   * @returns A plain object with the enum's key, value, and index
    */
-  entries(): [keyof T & string, SafeEnumValue<T>][]
-
+  toJSON(): { key: string; value: string; index: number };
+  
   /**
-   * Returns an array of all enum entries (full value objects).
-   * @returns An array of SafeEnumValue objects containing all properties.
-   * @example
-   * ```typescript
-   * const entries = MyEnum.getEntries(); // [SafeEnumValue, SafeEnumValue, ...]
-   * ```
+   * Returns an array of all enum keys
+   * @returns An array of string keys for all enum values
    */
-  getEntries(): SafeEnumValue<T>[]
-
+  keys(): string[];
+  
   /**
-   * Returns an array of all enum values as strings.
-   * @returns An array of string values from the enum.
-   * @example
-   * ```typescript
-   * const values = MyEnum.values(); // ['foo', 'bar', 'baz']
-   * ```
+   * Returns an array of all enum values as strings
+   * @returns An array of string values from the enum
    */
-  values(): string[]
-
+  values(): string[];
+  
   /**
-   * Returns an array of all enum indices.
-   * @returns An array of numbers representing the indices.
-   * @example
-   * ```typescript
-   * const indices = MyEnum.indexes(); // [0, 1, 2]
-   * ```
+   * Returns an array of all enum indices
+   * @returns An array of numbers representing the indices
    */
-  indexes(): number[]
+  indexes(): number[];
+  
+  /**
+   * Returns an array of [key, value] pairs
+   * @returns An array of tuples containing the key and value for each enum entry
+   */
+  entries(): [string, SafeEnum][];
+  
+  /**
+   * Returns an array of all enum entries (full value objects)
+   * @returns An array of SafeEnum objects containing all properties
+   */
+  getEntries(): SafeEnum[];
+  
+  /**
+   * Allows iteration over enum values
+   */
+  [Symbol.iterator](): IterableIterator<SafeEnum>;
 }

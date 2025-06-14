@@ -54,33 +54,39 @@ pnpm add type-safe-enum
 ### 1. Simple Enum from Array (Recommended)
 
 ```typescript
-import { CreateSafeEnumFromArray } from 'type-safe-enum';
+import { CreateSafeEnumFromArray, type SafeEnum } from 'type-safe-enum';
 
 // Simplest way to create a type-safe enum
 const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
 type Status = typeof Status;  // Export this type for use in your app
 
 // Access values
-console.log(Status.Pending.value);    // 'Pending'
-console.log(Status.Approved.index);   // 1 (auto-assigned)
+console.log(Status.PENDING.value);    // 'Pending'
+console.log(Status.APPROVED.index);   // 1 (auto-assigned)
 
 // Type-safe lookups
 const status = Status.fromValue("Approved");  // Status.APPROVED | undefined
 const byKey = Status.fromKey("PENDING");     // Status.PENDING | undefined
+
+// Type-safe usage in functions
+function processStatus(status: Status) {
+  if (status.isEqual(Status.PENDING)) {
+    return 'Processing...';
+  }
+  return 'Done!';
+}
 ```
 
 ### 2. Basic Enum with Custom Values
 
 ```typescript
-import { CreateSafeEnum } from 'type-safe-enum';
+import { CreateSafeEnum, type SafeEnum } from 'type-safe-enum';
 
 const UserRole = CreateSafeEnum({
   ADMIN: { value: 'admin', index: 10 },
   EDITOR: { value: 'editor', index: 13 },
-  VIEWER: { value: 'viewer', index: 17 },
+  VIEWER: { value: 'viewer' },  // Auto-assigns next available index (14)
 } as const);
-
-type UserRole = typeof UserRole;
 
 // Type-safe usage
 function greet(userRole: UserRole) {
@@ -90,16 +96,13 @@ function greet(userRole: UserRole) {
   return 'Welcome!';
 }
 
-// Type-safe array of values
-const adminRoles = [UserRole.ADMIN, UserRole.EDITOR];
-
-// Check if a value is in the enum
+// Type-safe lookups
 const isValid = UserRole.hasValue('admin');  // true
 
 // Get all values and keys
 const allValues = UserRole.values();  // ['admin', 'editor', 'viewer']
 const allKeys = UserRole.keys();      // ['ADMIN', 'EDITOR', 'VIEWER']
-
+const allIndexes = UserRole.indexes(); // [10, 13, 14]
 // Iterate over entries
 for (const [key, value] of UserRole.entries()) {
   console.log(`${key}: ${value.value}`);

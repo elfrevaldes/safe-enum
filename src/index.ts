@@ -1,2 +1,2 @@
-export { CreateSafeEnum } from './safe-enum-factory'
-export type { SafeEnum, SafeEnumBase, SafeEnumValue } from './types/interfaces/safe-enum'
+export { CreateSafeEnum, CreateSafeEnumFromArray } from './safe-enum-factory'
+export type { SafeEnum, SafeEnumBase } from './types/interfaces/safe-enum'

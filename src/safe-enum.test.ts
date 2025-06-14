@@ -1,5 +1,5 @@
 import { CreateSafeEnum, CreateSafeEnumFromArray } from "./safe-enum-factory"
-
+import type { SafeEnum } from "./types/interfaces/safe-enum"
 import { describe, it, expect, afterAll, vi } from 'vitest'
 
 // Mock console.error to avoid polluting test output
@@ -346,8 +346,6 @@ describe("SafeEnum", () => {
         expect(TestEnum.hasIndex("0" as any)).toBe(false)
       })
     })
-
-
   })
 
   describe("Type Safety", () => {
@@ -530,16 +528,51 @@ describe("SafeEnum", () => {
     });
   });
 
-  describe("Edge Cases", () => {
-    it("should create enum from array of strings using CreateSafeEnumFromArray", () => {
-      const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
-      expect(Status["PENDING"].value).toBe("pending");
-      expect(Status["APPROVED"].value).toBe("approved");
-      expect(Status["REJECTED"].value).toBe("rejected");
-      expect(Status["PENDING"].index).toBe(0);
-      expect(Status["APPROVED"].index).toBe(1);
-      expect(Status["REJECTED"].index).toBe(2);
-      // Should have same lookup by value (fromValue)
+describe("CreateSafeEnumFromArray", () => {
+  it("should create enum from array of strings", () => {
+    const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
+    
+    expect(Status.PENDING).toBeDefined();
+    expect(Status.APPROVED).toBeDefined();
+    expect(Status.REJECTED).toBeDefined();
+    
+    expect(Status.PENDING.value).toBe("pending");
+    expect(Status.APPROVED.value).toBe("approved");
+    expect(Status.REJECTED.value).toBe("rejected");
+    
+    expect(Status.PENDING.index).toBe(0);
+    expect(Status.APPROVED.index).toBe(1);
+    expect(Status.REJECTED.index).toBe(2);
+    
+    // Test lookup methods
+    expect(Status.fromValue("pending")).toBe(Status.PENDING);
+    expect(Status.fromIndex(1)).toBe(Status.APPROVED);
+    
+    // Test utility methods
+    expect(Status.keys()).toEqual(["PENDING", "APPROVED", "REJECTED"]);
+    expect(Status.values()).toEqual(["pending", "approved", "rejected"]);
+    expect(Status.indexes()).toEqual([0, 1, 2]);
+  });
+});
+
+describe("Edge Cases", () => {
+  it("should create enum from object using CreateSafeEnumFromArray", () => {
+    // Using CreateSafeEnumFromArray for this test to ensure it's used
+    const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const)
+      
+    expect(Status.PENDING).toBeDefined()
+    expect(Status.APPROVED).toBeDefined()
+    expect(Status.REJECTED).toBeDefined()
+      
+    expect(Status.PENDING.value).toBe("pending")
+    expect(Status.APPROVED.value).toBe("approved")
+    expect(Status.REJECTED.value).toBe("rejected")
+      
+    expect(Status.PENDING.index).toBe(0)
+    expect(Status.APPROVED.index).toBe(1)
+    expect(Status.REJECTED.index).toBe(2)
+      
+    // Should have same lookup by value (fromValue)
       expect(Status.fromValue("pending")).toBe(Status["PENDING"]);
       expect(Status.fromValue("approved")).toBe(Status["APPROVED"]);
       expect(Status.fromValue("rejected")).toBe(Status["REJECTED"]);
@@ -556,12 +589,15 @@ describe("SafeEnum", () => {
       // Should have read-only properties
       expect(() => { (Status["PENDING"] as any).value = "foo" }).toThrow();
     });
+
     it("should handle empty enum", () => {
       const EmptyEnum = CreateSafeEnum({} as const)
       expect(EmptyEnum.keys()).toEqual([])
       expect(EmptyEnum.entries()).toEqual([])
       expect(Array.from(EmptyEnum.values())).toEqual([])
-    })
+      // Should be frozen
+      expect(Object.isFrozen(EmptyEnum)).toBe(true)
+    });
 
     it("should handle single-value enum", () => {
       const SingleEnum = CreateSafeEnum({
@@ -574,34 +610,76 @@ describe("SafeEnum", () => {
       const singleValues = SingleEnum.getEntries()
       expect(singleValues).toEqual([SingleEnum.ONLY])
       expect(SingleEnum.values()).toEqual(['only'])
-    })
+    });
 
     it("should handle sparse indices", () => {
       const SparseEnum = CreateSafeEnum({
         A: { value: "a", index: 10 },
         B: { value: "b", index: 20 },
-        C: { value: "c" } // Auto-assigned
+        C: { value: "c", index: 30 } // Explicit index
       } as const);
 
+      expect(SparseEnum.C.index).toBe(30);
+      expect(SparseEnum.A.index).toBe(10);
+      expect(SparseEnum.B.index).toBe(20);
+    });
+
+    it("should handle sparse indices with auto-assignment", () => {
+      const SparseEnum = CreateSafeEnum({
+        A: { value: "a", index: 10 },
+        B: { value: "b", index: 20 },
+        C: { value: "c" } // Auto-assigned index
+      } as const);
+
+      expect(SparseEnum.A.index).toBe(10);
+      expect(SparseEnum.B.index).toBe(20);
       expect(SparseEnum.C.index).not.toBe(10);
       expect(SparseEnum.C.index).not.toBe(20);
+      expect(SparseEnum.C.index).toBeGreaterThanOrEqual(0);
 
-      const values = SparseEnum.getEntries();
-      const indices = values.map(v => v.index);
-      expect(indices).toHaveLength(3);
+      const indices = SparseEnum.indexes();
       expect(indices).toContain(10);
       expect(indices).toContain(20);
       expect(indices).toContain(SparseEnum.C.index);
       expect(SparseEnum.values()).toEqual(['a', 'b', 'c']);
     });
 
-    it("should provide helpful error for duplicate indices", () => {
+    it("should throw error for duplicate indices", () => {
       expect(() => {
         CreateSafeEnum({
           A: { value: "a", index: 1 },
           B: { value: "b", index: 1 } // Duplicate index
-        } as const)
-      }).toThrow("Duplicate index 1 in enum map: 'B' conflicts with 'A'")
-    })
-  })
-})
+        } as const);
+      }).toThrow("Duplicate index 1 in enum map: 'B' conflicts with 'A'");
+    });
+  });
+});
+
+describe("Type System", () => {
+  it("should allow using SafeEnum as a type alias", () => {
+    // This is a type test - it will fail to compile if the types are incorrect
+    type RequestType = SafeEnum;
+    
+    // Create a test enum
+    const TestEnum = CreateSafeEnum({
+      GET: { value: 'get', index: 0 },
+      POST: { value: 'post', index: 1 }
+    } as const);
+    
+    // Test that we can assign an enum value to a variable of type RequestType
+    const getRequest: RequestType = TestEnum.GET;
+    const postRequest: RequestType = TestEnum.POST;
+    
+    // Verify the values are correct at runtime
+    expect(getRequest.value).toBe('get');
+    expect(postRequest.value).toBe('post');
+    
+    // Test that the type is preserved in function parameters
+    function processRequest(request: RequestType): string {
+      return `Processing ${request.key} request (${request.value})`;
+    }
+    
+    expect(processRequest(TestEnum.GET)).toBe('Processing GET request (get)');
+    expect(processRequest(TestEnum.POST)).toBe('Processing POST request (post)');
+  });
+});
