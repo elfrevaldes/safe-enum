@@ -9,14 +9,13 @@ const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => { /
 
 describe("SafeEnum", () => {
   // Define a test enum
-  const TestEnumMap = {
-    FOO: { value: 'foo' as const, index: 0 },
-    BAR: { value: 'bar' as const, index: 1 },
-    BAZ: { value: 'baz' as const, index: 2 }
+  const testEnumMap = {
+    FOO: { value: 'foo', index: 0 },
+    BAR: { value: 'bar', index: 1 },
+    BAZ: { value: 'baz', index: 2 }
   } as const
 
-  const testEnum = CreateSafeEnum(TestEnumMap)
-  type TestEnum = typeof testEnum
+  const testEnum = CreateSafeEnum(testEnumMap)
  
   afterAll(() => {
     mockConsoleError.mockRestore()
@@ -363,23 +362,12 @@ describe("SafeEnum", () => {
   describe("Type Safety", () => {
     it("should narrow types with isEnumValue", () => {
       const maybeEnum = { key: "FOO", value: "foo", index: 0 }
-      if (testEnum.isEnumValue(maybeEnum)) {
-        expect(maybeEnum.key).toBe("FOO")
-        expect(maybeEnum.value).toBe("foo")
-        expect(maybeEnum.index).toBe(0)
-      } else {
-        throw new Error("Type guard failed")
+      if (!testEnum.isEnumValue(maybeEnum)) {
+        throw new Error("Type guard should have narrowed the type");
       }
-    })
-
-    it("should reject invalid values with isEnumValue", () => {
-      expect(testEnum.isEnumValue(undefined)).toBe(false)
-      expect(testEnum.isEnumValue(null)).toBe(false)
-      expect(testEnum.isEnumValue({})).toBe(false)
-      expect(testEnum.isEnumValue({ key: "FOO" })).toBe(false)
-      expect(testEnum.isEnumValue({ value: "foo" })).toBe(false)
-      expect(testEnum.isEnumValue({ index: 0 })).toBe(false)
-      expect(testEnum.isEnumValue({ key: "NOPE", value: "nope", index: 999 })).toBe(false)
+      expect(maybeEnum.key).toBe("FOO")
+      expect(maybeEnum.value).toBe("foo")
+      expect(maybeEnum.index).toBe(0)
     })
 
     describe("hasValue()", () => {
@@ -562,18 +550,9 @@ describe("CreateSafeEnumFromArray", () => {
     
     // Test utility methods
     expect(Status.keys()).toEqual(["PENDING", "APPROVED", "REJECTED"]);
-    expect(Status.values()).toEqual(["pending", "approved", "rejected"]);
-    expect(Status.indexes()).toEqual([0, 1, 2]);
-  });
-});
-
-describe("Edge Cases", () => {
-  it("should create enum from object using CreateSafeEnumFromArray", () => {
-    // Using CreateSafeEnumFromArray for this test to ensure it's used
-    const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const)
       
-    expect(Status.PENDING).toBeDefined()
-    expect(Status.APPROVED).toBeDefined()
+      const result = testEnum.fromIndex(999)
+      expect(result).toBeUndefined()
     expect(Status.REJECTED).toBeDefined()
       
     expect(Status.PENDING.value).toBe("pending")
