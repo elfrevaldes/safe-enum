@@ -63,30 +63,48 @@ This library provides two main concepts:
 - `SafeEnum`: Interface for a single enum value (contains `key`, `value`, `index`)
 - `typeof Enum`: Type of the enum object (contains all values and utility methods)
 
+### Type Patterns
+
+#### For enum values (recommended):
+
+```typescript
+type Status = SafeEnum;  // For individual enum values
+let status: Status = Status.PENDING;
+```
+
+#### For enum objects (less common):
+
+```typescript
+type Status = typeof Status;  // For the enum object itself
+const status: Status = Status;
+```
+
+Most of the time, you'll want to use the first pattern to type individual enum values in your application.
+
 ## Quick Start
 
 ### 1. Simple Enum from Array (Recommended)
 
 ```typescript
-import { CreateSafeEnumFromArray, type SafeEnum } from 'type-safe-enum';
+import { CreateSafeEnumFromArray, SafeEnum } from 'type-safe-enum';
 
 // Create an enum from an array of strings
-const status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
+const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
 
-// Type for the enum object (contains all values and methods)
-type Status = typeof status;
+// Type for enum values (individual status objects)
+type Status = SafeEnum;
 
-// Type for a single enum value
-// Equivalent to: type StatusValue = ReturnType<typeof Status.fromValue>;
-// But more commonly used as: const status: Status = Status.PENDING;
+// Now you can use it like this:
+let currentStatus: Status = Status.PENDING;
+const approvedStatus: Status = Status.APPROVED;
 
 // Access values
-console.log(status.PENDING.value);    // 'Pending'
-console.log(status.APPROVED.index);   // 1 (auto-assigned)
+console.log(Status.PENDING.value);    // 'Pending'
+console.log(Status.APPROVED.index);   // 1 (auto-assigned)
 
 // Type-safe lookups
-const approved = status.fromValue("Approved");  // Status.APPROVED | undefined
-const pending = status.fromKey("PENDING");     // Status.PENDING | undefined
+const approved = Status.fromValue("Approved");  // Status.APPROVED | undefined
+const pending = Status.fromKey("PENDING");     // Status.PENDING | undefined
 
 // Type-safe usage in functions
 function processStatus(status: Status) {
@@ -100,7 +118,7 @@ function processStatus(status: Status) {
 ### 2. Basic Enum with Custom Values
 
 ```typescript
-import { CreateSafeEnum, type SafeEnum } from 'type-safe-enum';
+import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
 
 // Create an enum with custom values and indices
 const UserRole = CreateSafeEnum({
@@ -109,13 +127,14 @@ const UserRole = CreateSafeEnum({
   VIEWER: { value: 'viewer' },  // Auto-assigns next available index (14)
 } as const);
 
-// Type for the enum object
-type UserRole = typeof UserRole;
+// Type for individual UserRole values
+type UserRole = SafeEnum;
 
-// Type for a single UserRole value (automatically inferred)
-// const admin: UserRole = UserRole.ADMIN;
+// Usage examples
+const admin: UserRole = UserRole.ADMIN;
+const editor: UserRole = UserRole.EDITOR;
 
-// Type-safe usage
+// Type-safe usage in functions
 function greet(userRole: UserRole) {
   if (userRole.isEqual(UserRole.ADMIN)) {
     return 'Hello Admin!';
@@ -139,6 +158,8 @@ for (const [key, value] of UserRole.entries()) {
 ### 3. Advanced Usage: Auto-indexing and Mixed Indexes
 
 ```typescript
+import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
+
 // Auto-assigned indexes (0, 1, 2)
 const Status = CreateSafeEnum({
   PENDING: { value: 'pending' },
@@ -146,12 +167,24 @@ const Status = CreateSafeEnum({
   COMPLETED: { value: 'completed' }
 } as const);
 
+type Status = SafeEnum;
+
+// Example usage
+const currentStatus: Status = Status.PENDING;
+console.log(currentStatus.index); // 0
+
 // Mixed explicit and auto indexes
 const Priority = CreateSafeEnum({
   LOW: { value: 'low'}, // auto: 0
   MEDIUM: { value: 'medium', index: 10 },  
   HIGH: { value: 'high' } // auto: 11
 } as const);
+
+type Priority = SafeEnum;
+
+// Example usage
+const priority: Priority = Priority.MEDIUM;
+console.log(priority.index); // 10
 ```
 
 ## Real-World Examples
@@ -159,6 +192,8 @@ const Priority = CreateSafeEnum({
 ### API Response Validation
 
 ```typescript
+import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
+
 const StatusCode = CreateSafeEnum({
   OK: { value: 'ok', index: 200 },
   CREATED: { value: 'created', index: 201 },
@@ -167,6 +202,8 @@ const StatusCode = CreateSafeEnum({
   NOT_FOUND: { value: 'not_found', index: 404 },
   SERVER_ERROR: { value: 'server_error', index: 500 },
 } as const);
+
+type StatusCode = SafeEnum;
 
 // Type-safe status code handling
 function handleResponse(statusCode: number) {
@@ -180,11 +217,19 @@ function handleResponse(statusCode: number) {
   }
   return `Error: ${status.value}`;
 }
+
+// Example usage
+const responseCode: StatusCode = StatusCode.OK;
+console.log(handleResponse(200)); // 'Success!'
+console.log(handleResponse(401)); // 'Please log in'
 ```
 
 ### Form State Management
 
 ```typescript
+import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
+import { useState } from 'react';
+
 const FormState = CreateSafeEnum({
   IDLE: { value: 'idle', index: 10 },
   SUBMITTING: { value: 'submitting' }, // auto-indexed 11
@@ -192,13 +237,12 @@ const FormState = CreateSafeEnum({
   ERROR: { value: 'error' }, // auto-indexed 21
 } as const);
 
-// TypeScript will infer the type from the enum
-// But you can also explicitly type it if needed
-type FormState = typeof FormState;
+type FormState = SafeEnum;
 
 function FormComponent() {
   const [state, setState] = useState<FormState>(FormState.IDLE);
   
+  // Example usage in event handlers
   const handleSubmit = async () => {
     try {
       setState(FormState.SUBMITTING);
