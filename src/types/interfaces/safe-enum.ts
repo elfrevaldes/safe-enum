@@ -130,8 +130,8 @@ export interface SafeEnum extends SafeEnumBase {
 }
 
 // Interface for the enum object (static methods)
-export interface SafeEnumObject<T extends string = string> {
-  // Enum values
+export interface SafeEnumObject {
+  // Enum values - these will be populated by CreateSafeEnum
   [key: string]: SafeEnum | ((...args: any[]) => any);
   
   // Factory methods

@@ -20,7 +20,7 @@ import type { SafeEnum, SafeEnumObject } from "./types/interfaces/safe-enum"
  */
 export function CreateSafeEnum<T extends Record<string, { value: string; index?: number }>>(
   enumMap: T
-): { [K in keyof T]: SafeEnum } & SafeEnumObject {
+): SafeEnumObject & { [K in keyof T]: SafeEnum } {
   // Ensure values are immutable and collect used indexes
   const usedIndexes = new Set<number>()
   let nextIndex = 0
@@ -410,7 +410,7 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
     Type: enumValueTypes[0] // First enum value as the Type
   } as const);
 
-  return factory as unknown as { [K in keyof T]: SafeEnum } & SafeEnumObject<string>;
+  return factory as unknown as { [K in keyof T]: SafeEnum } & SafeEnumObject;
 }
 
 /**
@@ -434,7 +434,7 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
  */
 export function CreateSafeEnumFromArray<T extends readonly string[]>(
   values: T
-): { [K in T[number] as Uppercase<K & string>]: SafeEnum } & SafeEnumObject {
+): SafeEnumObject & { [K in T[number] as Uppercase<K & string>]: SafeEnum } {
   // keep track of unique values (case-insensitive)
   const uniqueValues = new Set<string>();
   // Convert array to object map with { value } - let CreateSafeEnum handle index assignment

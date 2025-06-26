@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2025-06-26
+
+### Fixed
+- Fixed type definitions to ensure enum properties are non-nullable
+- Removed the need for non-null assertions when accessing enum values
+- Improved type safety for enum property access
+
+### Added
+- Added comprehensive type safety tests for enum property access
+- Added test case for using enum values in configuration objects
+
 ## [1.0.7] - 2025-06-26
 
 ### Added
