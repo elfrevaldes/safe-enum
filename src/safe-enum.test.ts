@@ -254,6 +254,48 @@ describe("SafeEnum", () => {
   })
 
   describe("Utility Methods", () => {
+    describe("typeOf", () => {
+      it("should declare the type so it can be used as a type", () => {
+        const httpProtocolMap = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
+
+        const HttpProtocol = CreateSafeEnumFromArray(httpProtocolMap)
+        type HttpProtocol = typeof HttpProtocol.typeOf
+        const getRequest: HttpProtocol = HttpProtocol.GET.value
+        const postRequest: HttpProtocol = HttpProtocol.POST.value
+        expect(getRequest).toBe(HttpProtocol.GET.value)
+        expect(postRequest).toBe(HttpProtocol.POST.value)
+      })
+
+      it("should create using CreateSafeEnum()", () => {
+        const httpProtocolMap = {
+          GET: { value: "get" },
+          POST: { value: "post" },
+          PUT: { value: "put" },
+          DELETE: { value: "delete" },
+          PATCH: { value: "patch" },
+          OPTIONS: { value: "options" },
+          HEAD: { value: "head" }
+        } as const
+        const HttpProtocol = CreateSafeEnum(httpProtocolMap)
+        type HttpProtocol = typeof HttpProtocol.typeOf
+        const getRequest: HttpProtocol = HttpProtocol.GET.value
+        const postRequest: HttpProtocol = HttpProtocol.POST.value
+        expect(getRequest).toBe(HttpProtocol.GET.value)
+        expect(postRequest).toBe(HttpProtocol.POST.value)
+      })
+
+      it("should be read-only", () => {
+        expect(() => {
+          // @ts-expect-error Testing runtime behavior
+          testEnum.typeOf = ['new', 'values'];
+        }).toThrow();
+        
+        // Verify the original values are unchanged
+        expect(testEnum.typeOf).toBeUndefined();
+      });
+    });
+    // end of typeOf tests
+
     describe("keys()", () => {
       it("should return all enum keys", () => {
         const keys = testEnum.keys()

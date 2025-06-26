@@ -73,8 +73,8 @@ import { CreateSafeEnumFromArray } from 'type-safe-enum';
 // Create an enum from an array of strings
 const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
 
-// Type for enum values (individual status objects)
-type Status = Status.Type();
+// Type for enum values (extracts the value type)
+type Status = typeof Status.typeOf;
 
 // Now you can use it like this:
 let currentStatus: Status = Status.PENDING;
@@ -97,6 +97,23 @@ function processStatus(status: Status) {
 }
 ```
 
+### Type Extraction
+
+Extract the type of enum values using `typeof Enum.typeOf`:
+
+```typescript
+// For enums created with CreateSafeEnumFromArray
+type StatusType = typeof Status.typeOf;  // 'Pending' | 'Approved' | 'Rejected'
+
+// For enums created with CreateSafeEnum
+type UserRoleType = typeof UserRole.typeOf;  // 'admin' | 'user' | 'guest'
+
+// Use the type in your code
+function checkAccess(role: UserRoleType): boolean {
+  return role === 'admin';
+}
+```
+
 ### 2. Basic Enum with Custom Values
 
 ```typescript
@@ -110,7 +127,7 @@ const UserRole = CreateSafeEnum({
 } as const);
 
 // Type for individual UserRole values
-type UserRole = UserRole.Type();
+type UserRole = typeof UserRole.typeOf;
 
 // Usage examples
 const admin: UserRole = UserRole.ADMIN;
@@ -149,7 +166,7 @@ const Status = CreateSafeEnum({
   COMPLETED: { value: 'completed' }
 } as const);
 
-type Status = SafeEnum;
+type Status = typeof Status.typeOf;
 
 // Example usage
 const currentStatus: Status = Status.PENDING;
@@ -162,7 +179,7 @@ const Priority = CreateSafeEnum({
   HIGH: { value: 'high' } // auto: 11
 } as const);
 
-type Priority = Priority.Type();
+type Priority = typeof Priority.typeOf;
 
 // Example usage
 const priority: Priority = Priority.MEDIUM;
@@ -185,7 +202,7 @@ const StatusCode = CreateSafeEnum({
   SERVER_ERROR: { value: 'server_error', index: 500 },
 } as const);
 
-type StatusCode = StatusCode.Type();
+type StatusCode = typeof StatusCode.typeOf;
 
 // Type-safe status code handling
 function handleResponse(statusCode: number) {
@@ -219,7 +236,7 @@ const FormState = CreateSafeEnum({
   ERROR: { value: 'error' }, // auto-indexed 21
 } as const);
 
-type FormState = FormState.Type();
+type FormState = typeof FormState.typeOf;
 
 function FormComponent() {
   const [state, setState] = useState<FormState>(FormState.IDLE);
@@ -260,6 +277,12 @@ Creates a type-safe enum from an object mapping.
 ### `CreateSafeEnumFromArray(values)`: `SafeEnum<T>`
 
 Creates a type-safe enum from an array of string literals.
+
+### Properties
+
+| Property | Type | Description | Example |
+|----------|------|-------------|---------|
+| `typeOf` | `T` | A type-only property that can be used with `typeof` to extract the type of enum values | `type Role = typeof UserRole.typeOf` |
 
 ### Static Methods
 

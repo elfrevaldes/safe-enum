@@ -36,6 +36,11 @@ export interface SafeEnumBase {
  * ```
  */
 /**
+ * Type utility to extract the type of enum values
+ */
+export type EnumType<T extends { [key: string]: { value: string } }> = T[keyof T]['value'];
+
+/**
  * Represents a type-safe enum value with lookup methods
  */
 export interface SafeEnum {
@@ -78,4 +83,19 @@ export interface SafeEnum {
   
   // Iterator
   [Symbol.iterator](): IterableIterator<SafeEnum>;
+  
+  // Type information
+  /**
+   * Returns an array of all enum values
+   * @example
+   * const statusValues = Status.values(); // ['pending', 'approved', 'rejected']
+   */
+  values(): string[];
+  
+  /**
+   * Type utility to extract the type of enum values
+   * @example
+   * type StatusType = typeof Status.typeOf; // 'pending' | 'approved' | 'rejected'
+   */
+  readonly typeOf: string;
 }

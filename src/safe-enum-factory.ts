@@ -91,40 +91,40 @@ export function CreateSafeEnum(
       value,
       index,
       fromIndex: (num: number) => {
-        const result = indexToEntry.get(num)
+        const result = indexToEntry.get(num);
         if (!result) {
           const validIndices = Object.entries(enumMap)
             .map(([k, v]) => `'${k}': ${v.index}`)
-            .join(', ')
-          console.error(`[SafeEnum] No enum value with index ${num}. Valid indices are: ${validIndices}`)
-          return undefined
+            .join(', ');
+          console.error(`[SafeEnum] No enum value with index ${num}. Valid indices are: ${validIndices}`);
+          return undefined;
         }
-        return result
+        return result;
       },
       fromValue: (str: string) => {
-        const result = valueToEntry.get(str)
+        const result = valueToEntry.get(str);
         if (!result) {
-          const validValues = Object.values(enumMap).map(v => `'${v.value}'`).join(', ')
-          console.error(`[SafeEnum] No enum value with value '${str}'. Valid values are: ${validValues}`)
-          return undefined
+          const validValues = Object.values(enumMap).map(v => `'${v.value}'`).join(', ');
+          console.error(`[SafeEnum] No enum value with value '${str}'. Valid values are: ${validValues}`);
+          return undefined;
         }
-        return result
+        return result;
       },
       fromKey: (k: string) => {
-        const result = keyToEntry.get(k)
+        const result = keyToEntry.get(k);
         if (!result) {
-          const validKeys = Object.keys(enumMap).map(key => `'${key}'`).join(', ')
-          console.error(`[SafeEnum] No enum value with key '${k}'. Valid keys are: ${validKeys}`)
-          return undefined
+          const validKeys = Object.keys(enumMap).map(key => `'${key}'`).join(', ');
+          console.error(`[SafeEnum] No enum value with key '${k}'. Valid keys are: ${validKeys}`);
+          return undefined;
         }
-        return result
+        return result;
       },
       hasValue: (val: string) => valueToEntry.has(val),
       hasKey: (k: string) => keyToEntry.has(k),
       hasIndex: (idx: number) => indexToEntry.has(idx),
       isEnumValue: (val: unknown): val is SafeEnum => {
-        if (!val || typeof val !== 'object') return false
-        const v = val as Record<string, unknown>
+        if (!val || typeof val !== 'object') return false;
+        const v = val as Record<string, unknown>;
         return (
           typeof v.key === 'string' &&
           typeof v.value === 'string' &&
@@ -132,7 +132,7 @@ export function CreateSafeEnum(
           Object.prototype.hasOwnProperty.call(v, 'key') &&
           Object.prototype.hasOwnProperty.call(v, 'value') &&
           Object.prototype.hasOwnProperty.call(v, 'index')
-        )
+        );
       },
       isEqual(other: SafeEnum | SafeEnum[]): boolean {
         if (!other) return false;
@@ -140,32 +140,32 @@ export function CreateSafeEnum(
         return others.some((item) => item && typeof item === 'object' && 'value' in item && item.value === value);
       },
       toString(): string {
-        return `${key}: (${value}), index: ${index}`
+        return `${key}: (${value}), index: ${index}`;
       },
       toJSON() {
         return {
           key,
           value,
           index
-        }
+        };
       },
       Key(): string {
         if (!key) {
-          throw new Error(`Key is undefined for enum value: ${value}`)
+          throw new Error(`Key is undefined for enum value: ${value}`);
         }
-        return key
+        return key;
       },
       Value(): string {
         if (!value) {
-          throw new Error(`Value is undefined for enum value: ${key}`)
+          throw new Error(`Value is undefined for enum value: ${key}`);
         }
-        return value
+        return value;
       },
       Index(): number {
         if (!index) {
-          throw new Error(`Index is undefined for enum value: ${key}`)
+          throw new Error(`Index is undefined for enum value: ${key}`);
         }
-        return index
+        return index;
       },
       keys: () => Object.keys(enumValues),
       values: () => Object.values(enumValues).map(e => e.value),
@@ -176,6 +176,10 @@ export function CreateSafeEnum(
         for (const value of Object.values(enumValues)) {
           yield value;
         }
+      },
+      get typeOf() {
+        // This is a type-only property, the actual value doesn't matter at runtime
+        return Object.values(enumValues)[0]?.value as any;
       }
     }
 
@@ -270,9 +274,18 @@ export function CreateSafeEnum(
     return values.every((value) => value?.value === firstValue)
   }
 
-  // Create the enum object with all methods
+  // Create a base object with the enum values
+  const base = {
+    ...enumValues
+  };
+
+  // Get all enum values for the Type property
+  const enumValueTypes = Object.values(enumValues).map(e => e.value);
+  type EnumValueType = typeof enumValueTypes[number];
+
+  // Create the factory object with proper typing
   const factory = {
-    // Add all methods
+    // Add methods to the factory
     fromIndex,
     fromValue,
     fromKey,
@@ -286,13 +299,15 @@ export function CreateSafeEnum(
     values: () => Object.values(enumValues).map(e => e.value),
     indexes: () => Object.values(enumValues).map(e => e.index),
     entries: () => Object.entries(enumValues) as [string, SafeEnum][],
-    get typeOf() {
-      return Object.values(enumValues).map(e => e.value) as (SafeEnum['value'][])
+    // Type property for type extraction
+    get Type(): EnumValueType {
+      // This is a type-only property, the actual value doesn't matter at runtime
+      return '' as EnumValueType;
     },
     [Symbol.iterator]: () => Object.values(enumValues)[Symbol.iterator](),
     // Add enum values as properties
-    ...enumValues
-  } as unknown as SafeEnum & { [key: string]: SafeEnum }
+    ...base
+  } as unknown as SafeEnum & { [key: string]: SafeEnum } & { Type: EnumValueType }
 
   return Object.freeze(factory)
 }
