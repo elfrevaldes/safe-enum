@@ -41,6 +41,7 @@ export type EnumType<T extends { [key: string]: { value: string } }> = T[keyof T
  * console.log(method.value); // 'POST'
  * ```
  */
+// Interface for enum value instances
 export interface SafeEnum extends SafeEnumBase {
   /** The string key of the enum value (e.g., 'PENDING') */
   readonly key: string;
@@ -51,28 +52,105 @@ export interface SafeEnum extends SafeEnumBase {
   /** The numeric index of the enum */
   readonly index: number;
   
-  //#region Lookup methods
+    //#region Instance Methods
+  // These methods are available on enum value instances
+  
+  //#region Type guards
   /**
-   * Creates an enum value by its index
-   * @param num The index to search for
-   * @returns The enum value with the given index, or undefined if not found
+   * Checks if this enum value has the given value
+   * @param value The value to check against this enum value
+   * @returns true if the values match, false otherwise
    */
-  fromIndex(num: number): SafeEnum | undefined;
+  hasValue(value: string): boolean;
   
   /**
-   * Creates an enum value by its value
-   * @param str The value to search for
-   * @returns The enum value with the given value, or undefined if not found
+   * Checks if this enum value has the given key
+   * @param key The key to check against this enum value
+   * @returns true if the keys match, false otherwise
    */
-  fromValue(str: string): SafeEnum | undefined;
+  hasKey(key: string): boolean;
   
   /**
-   * Creates an enum value by its key
-   * @param key The key to search for
-   * @returns The enum value with the given key, or undefined if not found
+   * Checks if this enum value has the given index
+   * @param index The index to check against this enum value
+   * @returns true if the indices match, false otherwise
    */
-  fromKey(key: string): SafeEnum | undefined;
+  hasIndex(index: number): boolean;
+  
+  /**
+   * Type guard to check if the given value is an enum value
+   * @param value The value to check
+   * @returns true if the value is an enum value, false otherwise
+   */
+  isEnumValue(value: unknown): value is SafeEnum;
   //#endregion
+  
+  //#region Comparison
+  /**
+   * Checks if the given enum value or array of values matches this enum value
+   * @param other The value or array of values to compare with
+   * @returns true if the values match, false otherwise
+   */
+  isEqual(other: SafeEnum | SafeEnum[]): boolean;
+  //#endregion
+  
+  //#region String representation
+  /**
+   * Returns a string representation of the enum value
+   * @returns "key: value, index: index"
+   */
+  toString(): string;
+  
+  /**
+   * Returns a JSON representation of the enum value
+   * @returns A JSON representation of the enum value
+   */
+  toJSON(): { key: string; value: string; index: number };
+  //#endregion
+  
+  //#region Getters
+  /**
+   * Returns the key of the enum value or throws if undefined
+   * @returns The enum key as a string
+   */
+  Key(): string;
+  
+  /**
+   * Returns the value of the enum or throws if undefined
+   * @returns The enum value as a string
+   */
+  Value(): string;
+  
+  /**
+   * Returns the index of the enum or throws if undefined
+   * @returns The enum index as a number
+   */
+  Index(): number;
+  //#endregion
+}
+
+// Interface for the enum object (static methods)
+export interface SafeEnumObject<T extends string = string> {
+  // Enum values
+  [key: string]: SafeEnum | ((...args: any[]) => any);
+  
+  // Factory methods
+  fromValue(value: string): SafeEnum | undefined;
+  fromKey(key: string): SafeEnum | undefined;
+  fromIndex(index: number): SafeEnum | undefined;
+  
+  // Type guards
+  isEnumValue(value: unknown): value is SafeEnum;
+  
+  // Collection methods
+  keys(): string[];
+  values(): string[];
+  indexes(): number[];
+  entries(): [string, SafeEnum][];
+  getEntries(): SafeEnum[];
+  
+  // Iterator support
+  [Symbol.iterator](): IterableIterator<SafeEnum>;
   
   //#region Type guards
   /**
@@ -199,12 +277,5 @@ export interface SafeEnum extends SafeEnumBase {
    * const statusValues = Status.values(); // ['pending', 'approved', 'rejected']
    */
   values(): string[];
-  
-  /**
-   * Type utility to extract the type of enum values
-   * @example
-   * type StatusType = typeof Status.typeOf; // 'pending' | 'approved' | 'rejected'
-   */
-  readonly typeOf: string;
   //#endregion
 }

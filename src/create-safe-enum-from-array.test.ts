@@ -2,44 +2,49 @@ import { describe, it, expect, vi, beforeAll, afterEach, beforeEach } from 'vite
 import { CreateSafeEnumFromArray } from './safe-enum-factory';
 import type { SafeEnum } from './types/interfaces/safe-enum';
 
+// Mock console.error to avoid polluting test output
+let mockConsoleError: any;
+beforeAll(() => {
+  mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => { /* intentionally empty for test */ });
+});
+
 describe("CreateSafeEnumFromArray", () => {
   // Test array setup
   const testArray = ['foo', 'bar', 'baz'] as const;
-  type TestArray = typeof testArray;
-  let testEnum: { [K in Uppercase<TestArray[number]>]: SafeEnum } & SafeEnum;
-  
+  let TestEnum = CreateSafeEnumFromArray(testArray);
+  type TestEnum = SafeEnum;
   // Setup before each test
   beforeEach(() => {
-    testEnum = CreateSafeEnumFromArray(testArray);
+    TestEnum = CreateSafeEnumFromArray(testArray);
   });
   
   // Basic functionality
   describe("Basic Functionality", () => {
     it("should create enum with correct properties from array", () => {
-      expect(testEnum.FOO).toBeDefined();
-      expect(testEnum.BAR).toBeDefined();
-      expect(testEnum.BAZ).toBeDefined();
+      expect(TestEnum.FOO).toBeDefined();
+      expect(TestEnum.BAR).toBeDefined();
+      expect(TestEnum.BAZ).toBeDefined();
       
-      expect(testEnum.FOO.value).toBe('foo');
-      expect(testEnum.FOO.key).toBe('FOO');
-      expect(testEnum.FOO.index).toBe(0);
+      expect(TestEnum.FOO.value).toBe('foo');
+      expect(TestEnum.FOO.key).toBe('FOO');
+      expect(TestEnum.FOO.index).toBe(0);
       
-      expect(testEnum.BAR.value).toBe('bar');
-      expect(testEnum.BAR.key).toBe('BAR');
-      expect(testEnum.BAR.index).toBe(1);
+      expect(TestEnum.BAR.value).toBe('bar');
+      expect(TestEnum.BAR.key).toBe('BAR');
+      expect(TestEnum.BAR.index).toBe(1);
       
-      expect(testEnum.BAZ.value).toBe('baz');
-      expect(testEnum.BAZ.key).toBe('BAZ');
-      expect(testEnum.BAZ.index).toBe(2);
+      expect(TestEnum.BAZ.value).toBe('baz');
+      expect(TestEnum.BAZ.key).toBe('BAZ');
+      expect(TestEnum.BAZ.index).toBe(2);
     });
     
     it("should ensure enum value properties are immutable", () => {
       // @ts-expect-error Testing immutability
-      expect(() => { testEnum.FOO.value = 'new value'; }).toThrow();
+      expect(() => { TestEnum.FOO.value = 'new value'; }).toThrow();
       // @ts-expect-error Testing immutability
-      expect(() => { testEnum.FOO.key = 'NEW_KEY'; }).toThrow();
+      expect(() => { TestEnum.FOO.key = 'NEW_KEY'; }).toThrow();
       // @ts-expect-error Testing immutability
-      expect(() => { testEnum.FOO.index = 999; }).toThrow();
+      expect(() => { TestEnum.FOO.index = 999; }).toThrow();
     });
   });
   
@@ -47,28 +52,28 @@ describe("CreateSafeEnumFromArray", () => {
   describe("Lookup Method", () => {
     describe("fromValue", () => {
       it("should find enum value by value", () => {
-        expect(testEnum.fromValue('foo')).toBe(testEnum.FOO);
-        expect(testEnum.fromValue('bar')).toBe(testEnum.BAR);
-        expect(testEnum.fromValue('baz')).toBe(testEnum.BAZ);
-        expect(testEnum.fromValue('nonexistent')).toBeUndefined();
+        expect(TestEnum.fromValue('foo')).toBe(TestEnum.FOO);
+        expect(TestEnum.fromValue('bar')).toBe(TestEnum.BAR);
+        expect(TestEnum.fromValue('baz')).toBe(TestEnum.BAZ);
+        expect(TestEnum.fromValue('nonexistent')).toBeUndefined();
       });
     });
     
     describe("fromKey", () => {
       it("should find enum value by key", () => {
-        expect(testEnum.fromKey('FOO')).toBe(testEnum.FOO);
-        expect(testEnum.fromKey('BAR')).toBe(testEnum.BAR);
-        expect(testEnum.fromKey('BAZ')).toBe(testEnum.BAZ);
-        expect(testEnum.fromKey('NONEXISTENT')).toBeUndefined();
+        expect(TestEnum.fromKey('FOO')).toBe(TestEnum.FOO);
+        expect(TestEnum.fromKey('BAR')).toBe(TestEnum.BAR);
+        expect(TestEnum.fromKey('BAZ')).toBe(TestEnum.BAZ);
+        expect(TestEnum.fromKey('NONEXISTENT')).toBeUndefined();
       });
     });
     
     describe("fromIndex", () => {
       it("should find enum value by index", () => {
-        expect(testEnum.fromIndex(0)).toBe(testEnum.FOO);
-        expect(testEnum.fromIndex(1)).toBe(testEnum.BAR);
-        expect(testEnum.fromIndex(2)).toBe(testEnum.BAZ);
-        expect(testEnum.fromIndex(999)).toBeUndefined();
+        expect(TestEnum.fromIndex(0)).toBe(TestEnum.FOO);
+        expect(TestEnum.fromIndex(1)).toBe(TestEnum.BAR);
+        expect(TestEnum.fromIndex(2)).toBe(TestEnum.BAZ);
+        expect(TestEnum.fromIndex(999)).toBeUndefined();
       });
     });
   });
@@ -76,82 +81,78 @@ describe("CreateSafeEnumFromArray", () => {
   describe("Accessors Methods", () => {
     describe("with valid properties", () => {
       it("Value()should return the value", () => {
-        expect(testEnum.FOO.Value()).toBe('foo');
-        expect(testEnum.BAR.Value()).toBe('bar');
-        expect(testEnum.BAZ.Value()).toBe('baz');
+        expect(TestEnum.FOO.Value()).toBe('foo');
+        expect(TestEnum.BAR.Value()).toBe('bar');
+        expect(TestEnum.BAZ.Value()).toBe('baz');
       });
     
       it("Key()should return the key", () => {
-          expect(testEnum.FOO.Key()).toBe('FOO');
-          expect(testEnum.BAR.Key()).toBe('BAR');
-          expect(testEnum.BAZ.Key()).toBe('BAZ');
+          expect(TestEnum.FOO.Key()).toBe('FOO');
+          expect(TestEnum.BAR.Key()).toBe('BAR');
+          expect(TestEnum.BAZ.Key()).toBe('BAZ');
         });
       
         it("Index() should return the index", () => {
-          expect(testEnum.FOO.Index()).toBe(0);
-          expect(testEnum.BAR.Index()).toBe(1);
-          expect(testEnum.BAZ.Index()).toBe(2);
+          expect(TestEnum.FOO.Index()).toBe(0);
+          expect(TestEnum.BAR.Index()).toBe(1);
+          expect(TestEnum.BAZ.Index()).toBe(2);
         });
     });
     describe("accessing undefined properties", () => {
+      it("Key() should throw an error when accessing undefined properties", () => {
+        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum | undefined;
+        expect(invalidKey).toBeUndefined();
+        
+        // Test that trying to call Key() on undefined throws
+        expect(() => (invalidKey as any).Key()).toThrow(TypeError);
+      });
       it("Value() should throw an error when accessing undefined properties", () => {
-        // @ts-expect-error Testing undefined property access
-        const invalidKey = testEnum.INVALIDKEY;
+        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum | undefined;
         expect(invalidKey).toBeUndefined();
           
         // Test that trying to call Value() on undefined throws
-        expect(() => invalidKey!.Value()).toThrow(TypeError);
-      });
-      it("Key() should throw an error when accessing undefined properties", () => {
-        // @ts-expect-error Testing undefined property access
-        const invalidKey = testEnum.INVALIDKEY;
-        expect(invalidKey).toBeUndefined();
-          
-        // Test that trying to call Key() on undefined throws
-        expect(() => invalidKey!.Key()).toThrow(TypeError);
+        expect(() => (invalidKey as any).Value()).toThrow(TypeError);
       });
       it("Index() should throw an error when accessing undefined properties", () => {
-        // @ts-expect-error Testing undefined property access
-        const invalidKey = testEnum.INVALIDKEY;
+        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum | undefined;
         expect(invalidKey).toBeUndefined();
           
         // Test that trying to call Index() on undefined throws
-        expect(() => invalidKey!.Index()).toThrow(TypeError);
+        expect(() => (invalidKey as any).Index()).toThrow(TypeError);
       });
     });
   });
 
-
   // Collection methods
   describe("Collection Methods", () => {
     it("should return all keys with keys()", () => {
-      const keys = testEnum.keys();
+      const keys = TestEnum.keys();
       expect(keys).toEqual(['FOO', 'BAR', 'BAZ']);
     });
     
     it("should return all values with values()", () => {
-      const values = testEnum.values();
+      const values = TestEnum.values();
       expect(values).toEqual(['foo', 'bar', 'baz']);
     });
     
     it("should return all indexes with indexes()", () => {
-      const indexes = testEnum.indexes();
+      const indexes = TestEnum.indexes();
       expect(indexes).toEqual([0, 1, 2]);
     });
 
     it("should return all entries with entries()", () => {
-      const entries = testEnum.entries();
+      const entries = TestEnum.entries();
       expect(entries).toHaveLength(3);
-      expect(entries[0]).toEqual(['FOO', testEnum.FOO]);
-      expect(entries[1]).toEqual(['BAR', testEnum.BAR]);
-      expect(entries[2]).toEqual(['BAZ', testEnum.BAZ]);
+      expect(entries[0]).toEqual(['FOO', TestEnum.FOO]);
+      expect(entries[1]).toEqual(['BAR', TestEnum.BAR]);
+      expect(entries[2]).toEqual(['BAZ', TestEnum.BAZ]);
     });
     
     it("should return all enum values with getEntries()", () => {
-      const entries = testEnum.getEntries();
-      expect(entries).toContain(testEnum.FOO);
-      expect(entries).toContain(testEnum.BAR);
-      expect(entries).toContain(testEnum.BAZ);
+      const entries = TestEnum.getEntries();
+      expect(entries).toContain(TestEnum.FOO);
+      expect(entries).toContain(TestEnum.BAR);
+      expect(entries).toContain(TestEnum.BAZ);
       expect(entries).toHaveLength(3);
     });
   });
@@ -159,30 +160,30 @@ describe("CreateSafeEnumFromArray", () => {
   // Type safety
   describe("Type Safety", () => {
     it("should narrow types with isEnumValue", () => {
-      const maybeEnum = testEnum.FOO;
-      expect(testEnum.isEnumValue(maybeEnum)).toBe(true);
+      const maybeEnum = TestEnum.FOO;
+      expect(TestEnum.isEnumValue(maybeEnum)).toBe(true);
       expect(maybeEnum.value).toBe('foo');
     });
     
     it("should correctly identify non-enum values in isEnumValue", () => {
       // Test with null and undefined
-      expect(testEnum.isEnumValue(null)).toBe(false);
-      expect(testEnum.isEnumValue(undefined)).toBe(false);
+      expect(TestEnum.isEnumValue(null)).toBe(false);
+      expect(TestEnum.isEnumValue(undefined)).toBe(false);
       
       // Test with objects missing required properties
-      expect(testEnum.isEnumValue({})).toBe(false);
-      expect(testEnum.isEnumValue({ key: 'TEST' })).toBe(false);
-      expect(testEnum.isEnumValue({ value: 'test' })).toBe(false);
-      expect(testEnum.isEnumValue({ index: 0 })).toBe(false);
+      expect(TestEnum.isEnumValue({})).toBe(false);
+      expect(TestEnum.isEnumValue({ key: 'TEST' })).toBe(false);
+      expect(TestEnum.isEnumValue({ value: 'test' })).toBe(false);
+      expect(TestEnum.isEnumValue({ index: 0 })).toBe(false);
       
       // Test with objects with wrong types
-      expect(testEnum.isEnumValue({ key: 1, value: 2, index: '3' })).toBe(false);
+      expect(TestEnum.isEnumValue({ key: 1, value: 2, index: '3' })).toBe(false);
     });
     
     it("should have correct type inference for keys and values", () => {
       // This test will fail to compile if the types are incorrect
-      const key: 'FOO' | 'BAR' | 'BAZ' = testEnum.FOO.key as 'FOO' | 'BAR' | 'BAZ';
-      const value: 'foo' | 'bar' | 'baz' = testEnum.FOO.value as 'foo' | 'bar' | 'baz';
+      const key: 'FOO' | 'BAR' | 'BAZ' = TestEnum.FOO.key as 'FOO' | 'BAR' | 'BAZ';
+      const value: 'foo' | 'bar' | 'baz' = TestEnum.FOO.value as 'foo' | 'bar' | 'baz';
       expect(key).toBe('FOO');
       expect(value).toBe('foo');
     });
@@ -191,54 +192,54 @@ describe("CreateSafeEnumFromArray", () => {
   // Equality and comparison
   describe("Equality", () => {
     it("should correctly compare enum values", () => {
-      expect(testEnum.FOO.isEqual(testEnum.FOO)).toBe(true);
-      expect(testEnum.FOO.isEqual(testEnum.BAR)).toBe(false);
+      expect(TestEnum.FOO.isEqual(TestEnum.FOO)).toBe(true);
+      expect(TestEnum.FOO.isEqual(TestEnum.BAR)).toBe(false);
     });
 
     it("should correctly identify enum values in hasValue", () => {
-      expect(testEnum.hasValue('foo')).toBe(true);
-      expect(testEnum.hasValue('bar')).toBe(true);
-      expect(testEnum.hasValue('baz')).toBe(true);
-      expect(testEnum.hasValue('nonexistent')).toBe(false);
+      expect(TestEnum.hasValue('foo')).toBe(true);
+      expect(TestEnum.hasValue('bar')).toBe(true);
+      expect(TestEnum.hasValue('baz')).toBe(true);
+      expect(TestEnum.hasValue('nonexistent')).toBe(false);
     });
     
     it("should correctly identify enum values in hasKey", () => {
-      expect(testEnum.hasKey('FOO')).toBe(true);
-      expect(testEnum.hasKey('BAR')).toBe(true);
-      expect(testEnum.hasKey('BAZ')).toBe(true);
-      expect(testEnum.hasKey('NONEXISTENT')).toBe(false);
+      expect(TestEnum.hasKey('FOO')).toBe(true);
+      expect(TestEnum.hasKey('BAR')).toBe(true);
+      expect(TestEnum.hasKey('BAZ')).toBe(true);
+      expect(TestEnum.hasKey('NONEXISTENT')).toBe(false);
     });
     
     it("should correctly identify enum values in hasIndex", () => {
-      expect(testEnum.hasIndex(0)).toBe(true);
-      expect(testEnum.hasIndex(1)).toBe(true);
-      expect(testEnum.hasIndex(100)).toBe(false);
+      expect(TestEnum.hasIndex(0)).toBe(true);
+      expect(TestEnum.hasIndex(1)).toBe(true);
+      expect(TestEnum.hasIndex(100)).toBe(false);
     });
 
     it("should correctly compare different enums with isEqual", () => {
-      const testEnum2 = CreateSafeEnumFromArray(['some', 'other', 'values'] as const);
-      expect(testEnum.FOO.isEqual(testEnum2.SOME)).toBe(false);
-      expect(testEnum.FOO.isEqual(testEnum2.OTHER)).toBe(false);
-      expect(testEnum.FOO.isEqual(testEnum2.VALUES)).toBe(false);
+      const TestEnum2 = CreateSafeEnumFromArray(['some', 'other', 'values'] as const);
+      expect(TestEnum.FOO.isEqual(TestEnum2.SOME)).toBe(false);
+      expect(TestEnum.FOO.isEqual(TestEnum2.OTHER)).toBe(false);
+      expect(TestEnum.FOO.isEqual(TestEnum2.VALUES)).toBe(false);
     });
 
     it("should work with array of enums in isEqual", () => {
-      expect(testEnum.FOO.isEqual([testEnum.FOO, testEnum.BAR])).toBe(true);
-      expect(testEnum.FOO.isEqual([testEnum.BAR, testEnum.BAZ])).toBe(false);
+      expect(TestEnum.FOO.isEqual([TestEnum.FOO, TestEnum.BAR])).toBe(true);
+      expect(TestEnum.FOO.isEqual([TestEnum.BAR, TestEnum.BAZ])).toBe(false);
     });
   });
   
   // String representation
   describe("String Representation", () => {
     it("should provide meaningful string representation", () => {
-      const str = testEnum.FOO.toString();
+      const str = TestEnum.FOO.toString();
       expect(str).toContain('FOO');
       expect(str).toContain('foo');
       expect(str).toContain('0');
     });
     
     it("should handle JSON serialization", () => {
-      const json = JSON.stringify(testEnum.FOO);
+      const json = JSON.stringify(TestEnum.FOO);
       const parsed = JSON.parse(json);
       expect(parsed.key).toBe('FOO');
       expect(parsed.value).toBe('foo');
