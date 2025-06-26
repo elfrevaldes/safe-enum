@@ -4,8 +4,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/elfrevaldes/safe-enum/ci.yml)](https://github.com/elfrevaldes/safe-enum/actions)
 [![codecov](https://codecov.io/gh/elfrevaldes/safe-enum/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/elfrevaldes/safe-enum)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/type-safe-enum)](https://bundlephobia.com/package/type-safe-enum)
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.9%2B-blue.svg)](https://www.typescriptlang.org/)
 
-A type-safe, flexible enum factory for TypeScript with runtime validation and type inference. Create robust enums with minimal boilerplate while maintaining full type safety.
+A type-safe, flexible enum factory for TypeScript with runtime validation and type inference. Create robust enums with minimal boilerplate while maintaining full type safety. This package provides a more type-safe alternative to TypeScript's native enums with additional features like runtime validation, bi-directional mapping, and better type inference.
 
 ## Features
 
@@ -31,10 +33,65 @@ yarn add type-safe-enum
 # or
 pnpm add type-safe-enum
 ```
+
 ## Requirements
 
-- Node.js >= 14.0.0
-- npm >= 10
+- Node.js >= 16.0.0
+- TypeScript >= 4.9.0
+- npm >= 7.0.0 or yarn >= 1.22.0 or pnpm >= 6.0.0
+
+## Quick Start Guide
+
+### 1. Basic Usage with Array (Recommended)
+
+```typescript
+import { CreateSafeEnumFromArray } from 'type-safe-enum';
+
+// Create an enum from an array of strings
+const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
+
+type Status = SafeEnum;  // 'Pending' | 'Approved' | 'Rejected'
+
+// Usage
+const current: Status = Status.PENDING;
+console.log(current.value);  // 'Pending'
+console.log(current.index);  // 0
+
+// Type-safe lookups
+const approved = Status.fromValue("Approved");  // Status.APPROVED | undefined
+const pending = Status.fromKey("PENDING");     // Status.PENDING | undefined
+
+// Type guards
+if (Status.hasValue("Pending")) {
+  // TypeScript knows this is valid
+  const status: Status = Status.fromValue("Pending")!;
+}
+```
+
+### 2. Advanced Usage with Custom Values
+
+```typescript
+import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
+
+const UserRole = CreateSafeEnum({
+  ADMIN: { value: 'admin', index: 0 },
+  EDITOR: { value: 'editor', index: 1 },
+  VIEWER: { value: 'viewer', index: 2 }
+} as const);
+
+type UserRole = SafeEnum;
+
+// Usage
+const role: UserRole = UserRole.ADMIN;
+console.log(role.key);    // 'ADMIN'
+console.log(role.value);  // 'admin'
+console.log(role.index);  // 0
+
+// Type-safe iteration
+for (const [key, value] of UserRole.entries()) {
+  console.log(`${key}: ${value.value}`);
+}
+```
 
 ## Why SafeEnum?
 
@@ -50,6 +107,8 @@ pnpm add type-safe-enum
 | Maintenance        | <div align="center">❌ <br>(verbose)</div>          | <div align="center">✅</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
 | String Comparison  | <div align="center">❌ <br>(can be confusing)</div> | <div align="center">❌</div> | <div align="center">❌</div>                    | <div align="center">✅</div> |
 | Iteration          | <div align="center">❌</div>                        | <div align="center">❌</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
+| Bundle Size        | <div align="center">✅<br>(0kB)</div>              | <div align="center">✅<br>(0kB)</div> | <div align="center">✅<br>(0kB)</div> | <div align="center">✅<br>(~2kB)</div> |
+| Tree Shaking       | <div align="center">❌</div>                        | <div align="center">✅</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
 
 ## Type System Overview
 
@@ -68,13 +127,13 @@ This library provides two main concepts:
 ### 1. Simple Enum from Array (Recommended)
 
 ```typescript
-import { CreateSafeEnumFromArray } from 'type-safe-enum';
+import { CreateSafeEnumFromArray, SafeEnum } from 'type-safe-enum';
 
 // Create an enum from an array of strings
 const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
 
-// Type for enum values (extracts the value type)
-type Status = typeof Status.typeOf;
+// Type for enum values
+type Status = SafeEnum;
 
 // Now you can use it like this:
 let currentStatus: Status = Status.PENDING;
@@ -97,20 +156,17 @@ function processStatus(status: Status) {
 }
 ```
 
-### Type Extraction
+### Type Usage
 
-Extract the type of enum values using `typeof Enum.typeOf`:
+Use the enum type directly in your code:
 
 ```typescript
-// For enums created with CreateSafeEnumFromArray
-type StatusType = typeof Status.typeOf;  // 'Pending' | 'Approved' | 'Rejected'
-
-// For enums created with CreateSafeEnum
-type UserRoleType = typeof UserRole.typeOf;  // 'admin' | 'user' | 'guest'
+// Import your enum
+import { UserRole } from 'path-to-your-enum';
 
 // Use the type in your code
-function checkAccess(role: UserRoleType): boolean {
-  return role === 'admin';
+function checkAccess(role: UserRole): boolean {
+  return role === UserRole.ADMIN.value;
 }
 ```
 
@@ -127,7 +183,7 @@ const UserRole = CreateSafeEnum({
 } as const);
 
 // Type for individual UserRole values
-type UserRole = typeof UserRole.typeOf;
+type UserRole = SafeEnum;
 
 // Usage examples
 const admin: UserRole = UserRole.ADMIN;
@@ -179,7 +235,7 @@ const Priority = CreateSafeEnum({
   HIGH: { value: 'high' } // auto: 11
 } as const);
 
-type Priority = typeof Priority.typeOf;
+type Priority = SafeEnum;
 
 // Example usage
 const priority: Priority = Priority.MEDIUM;
@@ -202,7 +258,7 @@ const StatusCode = CreateSafeEnum({
   SERVER_ERROR: { value: 'server_error', index: 500 },
 } as const);
 
-type StatusCode = typeof StatusCode.typeOf;
+type StatusCode = SafeEnum;
 
 // Type-safe status code handling
 function handleResponse(statusCode: number) {
@@ -236,7 +292,7 @@ const FormState = CreateSafeEnum({
   ERROR: { value: 'error' }, // auto-indexed 21
 } as const);
 
-type FormState = typeof FormState.typeOf;
+type FormState = SafeEnum;
 
 function FormComponent() {
   const [state, setState] = useState<FormState>(FormState.IDLE);
@@ -277,12 +333,6 @@ Creates a type-safe enum from an object mapping.
 ### `CreateSafeEnumFromArray(values)`: `SafeEnum<T>`
 
 Creates a type-safe enum from an array of string literals.
-
-### Properties
-
-| Property | Type | Description | Example |
-|----------|------|-------------|---------|
-| `typeOf` | `T` | A type-only property that can be used with `typeof` to extract the type of enum values | `type Role = typeof UserRole.typeOf` |
 
 ### Static Methods
 
