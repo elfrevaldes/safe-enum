@@ -72,6 +72,9 @@ export interface SafeEnum {
   indexes(): number[];
   entries(): [string, SafeEnum][];
   getEntries(): SafeEnum[];
+  Key(): string;
+  Value(): string;
+  Index(): number;
   
   // Iterator
   [Symbol.iterator](): IterableIterator<SafeEnum>;

@@ -673,4 +673,38 @@ describe("Type System", () => {
     expect(processRequest(TestEnum.GET)).toBe('Processing GET request (get)');
     expect(processRequest(TestEnum.POST)).toBe('Processing POST request (post)');
   });
+
+  it("should allow using enum properties in object declarations", () => {
+    // Define an enum for HTTP methods
+    const HttpProtocol = CreateSafeEnum({
+      GET: { value: 'get', index: 0 },
+      POST: { value: 'post', index: 1 },
+      PUT: { value: 'put', index: 2 },
+      DELETE: { value: 'delete', index: 3 }
+    } as const);
+    
+    // Create an object using enum properties
+    const requestConfig = {
+      method: HttpProtocol.PUT.value,  // Using the string value
+      methodKey: HttpProtocol.PUT.key, // Using the key
+      methodIndex: HttpProtocol.PUT.index, // Using the index
+      url: '/api/resource/123',
+      requiresAuth: true
+    };
+
+    // Verify the object properties
+    expect(requestConfig.method).toBe('put');
+    expect(requestConfig.methodKey).toBe('PUT');
+    expect(requestConfig.methodIndex).toBe(2);
+    expect(requestConfig.url).toBe('/api/resource/123');
+    expect(requestConfig.requiresAuth).toBe(true);
+
+    // Verify type safety
+    const processRequest = (config: { method: string }) => {
+      return `Processing ${config.method.toUpperCase()} request`;
+    };
+    
+    // This should type-check correctly
+    expect(processRequest({ method: requestConfig.method })).toBe('Processing PUT request');
+  });
 });

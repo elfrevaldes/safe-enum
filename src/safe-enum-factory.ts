@@ -149,6 +149,24 @@ export function CreateSafeEnum(
           index
         }
       },
+      Key(): string {
+        if (!key) {
+          throw new Error(`Key is undefined for enum value: ${value}`)
+        }
+        return key
+      },
+      Value(): string {
+        if (!value) {
+          throw new Error(`Value is undefined for enum value: ${key}`)
+        }
+        return value
+      },
+      Index(): number {
+        if (!index) {
+          throw new Error(`Index is undefined for enum value: ${key}`)
+        }
+        return index
+      },
       keys: () => Object.keys(enumValues),
       values: () => Object.values(enumValues).map(e => e.value),
       indexes: () => Object.values(enumValues).map(e => e.index).filter((i): i is number => i !== undefined),
@@ -268,6 +286,9 @@ export function CreateSafeEnum(
     values: () => Object.values(enumValues).map(e => e.value),
     indexes: () => Object.values(enumValues).map(e => e.index),
     entries: () => Object.entries(enumValues) as [string, SafeEnum][],
+    get typeOf() {
+      return Object.values(enumValues).map(e => e.value) as (SafeEnum['value'][])
+    },
     [Symbol.iterator]: () => Object.values(enumValues)[Symbol.iterator](),
     // Add enum values as properties
     ...enumValues
