@@ -73,6 +73,55 @@ describe("CreateSafeEnumFromArray", () => {
     });
   });
   
+  describe("Accessors Methods", () => {
+    describe("with valid properties", () => {
+      it("Value()should return the value", () => {
+        expect(testEnum.FOO.Value()).toBe('foo');
+        expect(testEnum.BAR.Value()).toBe('bar');
+        expect(testEnum.BAZ.Value()).toBe('baz');
+      });
+    
+      it("Key()should return the key", () => {
+          expect(testEnum.FOO.Key()).toBe('FOO');
+          expect(testEnum.BAR.Key()).toBe('BAR');
+          expect(testEnum.BAZ.Key()).toBe('BAZ');
+        });
+      
+        it("Index() should return the index", () => {
+          expect(testEnum.FOO.Index()).toBe(0);
+          expect(testEnum.BAR.Index()).toBe(1);
+          expect(testEnum.BAZ.Index()).toBe(2);
+        });
+    });
+    describe("accessing undefined properties", () => {
+      it("Value() should throw an error when accessing undefined properties", () => {
+        // @ts-expect-error Testing undefined property access
+        const invalidKey = testEnum.INVALIDKEY;
+        expect(invalidKey).toBeUndefined();
+          
+        // Test that trying to call Value() on undefined throws
+        expect(() => invalidKey!.Value()).toThrow(TypeError);
+      });
+      it("Key() should throw an error when accessing undefined properties", () => {
+        // @ts-expect-error Testing undefined property access
+        const invalidKey = testEnum.INVALIDKEY;
+        expect(invalidKey).toBeUndefined();
+          
+        // Test that trying to call Key() on undefined throws
+        expect(() => invalidKey!.Key()).toThrow(TypeError);
+      });
+      it("Index() should throw an error when accessing undefined properties", () => {
+        // @ts-expect-error Testing undefined property access
+        const invalidKey = testEnum.INVALIDKEY;
+        expect(invalidKey).toBeUndefined();
+          
+        // Test that trying to call Index() on undefined throws
+        expect(() => invalidKey!.Index()).toThrow(TypeError);
+      });
+    });
+  });
+
+
   // Collection methods
   describe("Collection Methods", () => {
     it("should return all keys with keys()", () => {
@@ -198,6 +247,26 @@ describe("CreateSafeEnumFromArray", () => {
   });
   
   // Edge cases
+  describe("Validation", () => {
+    it("should throw when array contains empty strings", () => {
+      expect(() => {
+        CreateSafeEnumFromArray(['', 'Something', 'Else'] as const);
+      }).toThrow('Enum value cannot be an empty string for key: ');
+    });
+
+    it("should throw when array contains duplicate values", () => {
+      expect(() => {
+        CreateSafeEnumFromArray(['', '', 'Else'] as const);
+      }).toThrow('Duplicate value: ');
+    });
+
+    it("should throw when array contains duplicate values (case-insensitive)", () => {
+      expect(() => {
+        CreateSafeEnumFromArray(['test', 'TEST', 'test2'] as const);
+      }).toThrow('Duplicate value: TEST');
+    });
+  });
+
   describe("Edge Cases", () => {
     it("should handle falsy but valid values correctly", () => {
       // This test verifies that falsy but valid values work correctly

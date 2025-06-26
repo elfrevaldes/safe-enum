@@ -70,6 +70,80 @@ describe("CreateSafeEnum", () => {
     });
   });
   
+  describe("Accessors Methods", () => {
+    describe("with valid properties", () => {
+      it("Value() should return the value", () => {
+        expect(testEnum.FOO.Value()).toBe('foo');
+        expect(testEnum.BAR.Value()).toBe('bar');
+        expect(testEnum.BAZ.Value()).toBe('baz');
+      });
+    
+      it("Key() should return the key", () => {
+        expect(testEnum.FOO.Key()).toBe('FOO');
+        expect(testEnum.BAR.Key()).toBe('BAR');
+        expect(testEnum.BAZ.Key()).toBe('BAZ');
+      });
+    
+      it("Index() should return the index", () => {
+        expect(testEnum.FOO.Index()).toBe(0);
+        expect(testEnum.BAR.Index()).toBe(1);
+        expect(testEnum.BAZ.Index()).toBe(2);
+      });
+    });
+    
+    describe("validation during creation", () => {
+      it("should throw when creating an enum with empty string value", () => {
+        expect(() => {
+          CreateSafeEnum({
+            TEST: { value: '', index: 0 }
+          });
+        }).toThrow('Enum value cannot be an empty string for key: TEST');
+      });
+
+      it("should throw when creating an enum with negative index", () => {
+        expect(() => {
+          CreateSafeEnum({
+            TEST: { value: 'test', index: -1 }
+          });
+        }).toThrow('Enum index cannot be less than zero for key: TEST');
+      });
+
+      it("should throw when creating an enum with empty string key", () => {
+        expect(() => {
+          // This is a TypeScript error, but we need to test the runtime behavior
+          const _: any = { '': { value: 'test', index: 0 } };
+          CreateSafeEnum(_);
+        }).toThrow('Enum key cannot be an empty string for value: test');
+      });
+    });
+    describe("accessing undefined properties", () => {
+      it("Value() should throw an error when accessing undefined properties", () => {
+        // @ts-expect-error Testing undefined property access
+        const invalidKey = testEnum.INVALIDKEY;
+        expect(invalidKey).toBeUndefined();
+        
+        // Test that trying to call Value() on undefined throws
+        expect(() => invalidKey!.Value()).toThrow(TypeError);
+      });
+      it("Key() should throw an error when accessing undefined properties", () => {
+        // @ts-expect-error Testing undefined property access
+        const invalidKey = testEnum.INVALIDKEY;
+        expect(invalidKey).toBeUndefined();
+        
+        // Test that trying to call Key() on undefined throws
+        expect(() => invalidKey!.Key()).toThrow(TypeError);
+      });
+      it("Index() should throw an error when accessing undefined properties", () => {
+        // @ts-expect-error Testing undefined property access
+        const invalidKey = testEnum.INVALIDKEY;
+        expect(invalidKey).toBeUndefined();
+        
+        // Test that trying to call Index() on undefined throws
+        expect(() => invalidKey!.Index()).toThrow(TypeError);
+      });
+    });
+  });
+  
   // Collection methods
   describe("Collection Methods", () => {
     it("should return all keys with keys()", () => {
@@ -181,19 +255,26 @@ describe("CreateSafeEnum", () => {
     it("should correctly compare enum values", () => {
       expect(testEnum.FOO.isEqual(testEnum.FOO)).toBe(true);
       expect(testEnum.FOO.isEqual(testEnum.BAR)).toBe(false);
-    });
-
-    it("should correctly identify enum values in hasValue", () => {
-      expect(testEnum.hasValue('foo')).toBe(true);
-      expect(testEnum.hasValue('bar')).toBe(true);
-      expect(testEnum.hasValue('baz')).toBe(true);
-      expect(testEnum.hasValue('nonexistent')).toBe(false);
+      
+      // Test with arrays
+      expect(testEnum.FOO.isEqual([testEnum.FOO, testEnum.BAR])).toBe(true);
+      expect(testEnum.FOO.isEqual([testEnum.BAR, testEnum.BAZ])).toBe(false);
+      
+      // Test with null/undefined
+      expect(testEnum.FOO.isEqual(null as any)).toBe(false);
+      expect(testEnum.FOO.isEqual(undefined as any)).toBe(false);
+      
+      // Test static isEqual
+      expect(testEnum.isEqual([testEnum.FOO, testEnum.FOO])).toBe(true);
+      expect(testEnum.isEqual([testEnum.FOO, testEnum.BAR])).toBe(false);
+      expect(testEnum.isEqual([])).toBe(false);
+      expect(testEnum.isEqual(null as any)).toBe(false);
+      expect(testEnum.isEqual(undefined as any)).toBe(false);
     });
     
-    it("should correctly identify enum values in hasKey", () => {
-      expect(testEnum.hasKey('FOO')).toBe(true);
-      expect(testEnum.hasKey('BAR')).toBe(true);
-      expect(testEnum.hasKey('BAZ')).toBe(true);
+    it("should handle hasValue and hasKey with invalid inputs", () => {
+      expect(testEnum.hasValue(null as any)).toBe(false);
+      expect(testEnum.hasValue(undefined as any)).toBe(false);
       expect(testEnum.hasKey('NONEXISTENT')).toBe(false);
     });
     

@@ -130,9 +130,10 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
         }
         return result;
       },
-      hasValue: (val: string) => valueToEntry.has(val),
-      hasKey: (k: string) => keyToEntry.has(k),
-      hasIndex: (idx: number) => indexToEntry.has(idx),
+      // Instance methods - check against current enum value
+      hasValue: (val: string) => value === val,
+      hasKey: (k: string) => key === k,
+      hasIndex: (idx: number) => index === idx,
       isEnumValue: (val: unknown): val is SafeEnum => {
         if (!val || typeof val !== 'object') return false;
         const v = val as Record<string, unknown>;
@@ -145,10 +146,19 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
           Object.prototype.hasOwnProperty.call(v, 'index')
         );
       },
-      isEqual(other: SafeEnum | SafeEnum[]): boolean {
+      isEqual: (other: SafeEnum | SafeEnum[]): boolean => {
         if (!other) return false;
         const others = Array.isArray(other) ? other : [other];
-        return others.some((item) => item && typeof item === 'object' && 'value' in item && item.value === value);
+        return others.some(item => 
+          item && 
+          typeof item === 'object' && 
+          'value' in item && 
+          'key' in item &&
+          'index' in item &&
+          item.value === value &&
+          item.key === key &&
+          item.index === index
+        );
       },
       toString(): string {
         return `${key}: (${value}), index: ${index}`;
@@ -211,19 +221,19 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
     createEnumValue(key, value, index)
   }
 
-  // Returns true if the enum contains the specified value
+  // Static methods - check against entire enum
   function hasValue(value: string): boolean {
-    return valueToEntry.has(value)
+    return valueToEntry.has(value);
   }
 
   // Returns true if the enum contains the specified key
   function hasKey(key: string): boolean {
-    return key in enumValues
+    return key in enumValues;
   }
 
   // Returns true if the enum contains the specified index
   function hasIndex(index: number): boolean {
-    return indexToEntry.has(index)
+    return indexToEntry.has(index);
   }
 
   // Factory methods with safe variants only
@@ -275,14 +285,26 @@ export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
     return !!entry && entry.value === valueProp && entry.index === index
   }
 
-  // Compares this enum value with another value or array of values
+  // Compares enum values for equality
   function isEqual(other: SafeEnum | SafeEnum[]): boolean {
-    if (!other) return false
-    const values = Array.isArray(other) ? other : [other]
-    if (values.length === 0) return false
-
-    const firstValue = values[0]?.value
-    return values.every((value) => value?.value === firstValue)
+    if (!other) return false;
+    const others = Array.isArray(other) ? other : [other];
+    if (others.length === 0) return false;
+    
+    // For static method, check if all values are the same as the first one
+    const first = others[0];
+    if (!first || typeof first !== 'object') return false;
+    
+    return others.every(item => 
+      item && 
+      typeof item === 'object' &&
+      'value' in item &&
+      'key' in item &&
+      'index' in item &&
+      item.value === first.value &&
+      item.key === first.key &&
+      item.index === first.index
+    );
   }
 
   // Create a base object with the enum values
