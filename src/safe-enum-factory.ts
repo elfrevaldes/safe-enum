@@ -18,9 +18,9 @@ import type { SafeEnum, SafeEnumBase } from "./types/interfaces/safe-enum"
  * @param enumMap - The enum map defining the enum values
  * @returns A type-safe enum object with lookup methods
  */
-export function CreateSafeEnum(
-  enumMap: Record<string, SafeEnumBase>
-): SafeEnum & { [key: string]: SafeEnum } {
+export function CreateSafeEnum<T extends Record<string, SafeEnumBase>>(
+  enumMap: T
+): { [K in keyof T]: SafeEnum } & SafeEnum {
   // Ensure values are immutable and collect used indexes
   const usedIndexes = new Set<number>()
   let nextIndex = 0
@@ -86,6 +86,17 @@ export function CreateSafeEnum(
 
   // Helper to create an enum value with proper typing
   function createEnumValue(key: string, value: string, index: number): SafeEnum {
+    // Validate that value is not an empty string
+    if (value === '') {
+      throw new Error(`Enum value cannot be an empty string for key: ${key}`);
+    }
+    // Validate that index is not zero
+    if (index < 0) {
+      throw new Error(`Enum index cannot be less than zero for key: ${key}`);
+    }
+    if (key === '') {
+      throw new Error(`Enum key cannot be an empty string for value: ${value}`);
+    }
     const enumValue: SafeEnum = {
       key,
       value,
@@ -162,7 +173,7 @@ export function CreateSafeEnum(
         return value;
       },
       Index(): number {
-        if (!index) {
+        if (index === undefined) {
           throw new Error(`Index is undefined for enum value: ${key}`);
         }
         return index;
@@ -307,7 +318,7 @@ export function CreateSafeEnum(
     [Symbol.iterator]: () => Object.values(enumValues)[Symbol.iterator](),
     // Add enum values as properties
     ...base
-  } as unknown as SafeEnum & { [key: string]: SafeEnum } & { Type: EnumValueType }
+  } as unknown as { [K in keyof T]: SafeEnum } & SafeEnum & { Type: EnumValueType }
 
   return Object.freeze(factory)
 }
@@ -329,19 +340,25 @@ export function CreateSafeEnum(
  * ```
  *
  * @param values Array of string literals
- * @returns A type-safe enum object
+ * @returns A type-safe enum object with keys derived from the input array
  */
 export function CreateSafeEnumFromArray<T extends readonly string[]>(
   values: T
-) {
-  // Build enum map with uppercase keys and auto-incrementing indices
-  const enumMap = (values as readonly string[]).reduce<Record<string, { value: string; index: number }>>(
-    (acc, value, index) => {
-      acc[value.toUpperCase()] = { value, index };
+): { [K in T[number] as Uppercase<K & string>]: SafeEnum } & SafeEnum {
+  // keep track of unique values (case-insensitive)
+  const uniqueValues = new Set<string>();
+  // Convert array to object map with { value } - let CreateSafeEnum handle index assignment
+  const enumMap = values.reduce<Record<string, { value: string }>>(
+    (acc, value) => {
+      const upperValue = value.toUpperCase();
+      if (uniqueValues.has(upperValue)) throw new Error(`Duplicate value: ${value}`);
+      
+      uniqueValues.add(upperValue);
+      acc[value.toUpperCase()] = { value };
       return acc;
     }, 
     {}
-  );
+  ) as Record<Uppercase<T[number] & string>, { value: T[number] & string }>;
 
-  return CreateSafeEnum(enumMap);
+  return CreateSafeEnum(enumMap) as unknown as { [K in T[number] as Uppercase<K & string>]: SafeEnum } & SafeEnum;
 }
