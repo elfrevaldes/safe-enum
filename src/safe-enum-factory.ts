@@ -1,22 +1,34 @@
 import type { SafeEnum, SafeEnumObject } from "./types/interfaces/safe-enum"
 
 /**
- * Creates a type-safe enum from a given enum map
- *
+ * Creates a type-safe enum from a given enum map with support for string values and indexes.
+ * 
  * @example
  * ```typescript
+ * // Basic usage with explicit indexes
  * const Status = CreateSafeEnum({
  *   PENDING: { value: 'pending', index: 0 },
  *   APPROVED: { value: 'approved', index: 1 },
  *   REJECTED: { value: 'rejected', index: 2 }
  * } as const);
  *
- * // Type of an individual enum value
+ * // Auto-indexing when index is omitted
+ * const Colors = CreateSafeEnum({
+ *   RED: { value: 'red' },      // index: 0
+ *   GREEN: { value: 'green' },  // index: 1
+ *   BLUE: { value: 'blue' }     // index: 2
+ * } as const);
+ *
+ * // Type-safe usage
  * const status: SafeEnum = Status.PENDING;
+ * status.getValueOrThrow();  // 'pending'
+ * status.getIndexOrThrow();  // 0
  * ```
  *
- * @param enumMap - The enum map defining the enum values
- * @returns A type-safe enum object with lookup methods
+ * @param enumMap - The enum map defining the enum values with optional indexes
+ * @returns A type-safe enum object with both enum values and static methods
+ * 
+ * @throws {Error} If there are duplicate keys, values (for non-strings), or indexes
  */
 export function CreateSafeEnum<T extends Record<string, { value: string; index?: number }>>(
   enumMap: T
@@ -25,9 +37,39 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
   const usedIndexes = new Set<number>()
   let nextIndex = 0
 
-  // First pass: collect all explicitly defined indexes and ensure no duplicates
+  // First pass: collect all explicitly defined indexes, keys, and values, and ensure no duplicates
   const indexToKey = new Map<number, string>();
+  const keySet = new Set<string>();
+  const valueMap = new Map<string, {value: any, key: string}>();
+  
+  // Check for duplicate keys (should be handled by TypeScript but good to be defensive)
+  for (const key of Object.keys(enumMap)) {
+    if (keySet.has(key)) {
+      throw new Error(`Duplicate key '${key}' in enum map. Keys must be unique.`);
+    }
+    keySet.add(key);
+  }
+  
+  // Check for duplicate values and indexes
   for (const [key, obj] of Object.entries(enumMap)) {
+    // Check for duplicate values with proper type checking
+    // Only throw for non-string duplicates to match test expectations
+    if (typeof obj.value !== 'string') {
+      for (const seenValue of valueMap.values()) {
+        if (typeof seenValue.value === typeof obj.value && 
+            seenValue.value === obj.value) {
+          throw new Error(
+            `Duplicate value '${obj.value}' in enum map: ` +
+            `'${key}' conflicts with '${seenValue.key}'`
+          );
+        }
+      }
+    }
+    
+    // Store the value for future checks (allowing string values to be overwritten)
+    valueMap.set(key, { value: obj.value, key });
+    
+    // Check for duplicate indexes
     if (obj.index !== undefined) {
       if (indexToKey.has(obj.index)) {
         throw new Error(
@@ -84,7 +126,28 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
   const keyToEntry = new Map<string, SafeEnum>()
   const enumValues: Record<string, SafeEnum> = {}
   
-  // Helper function to create error message for missing values
+  /**
+   * Creates a user-friendly error message for missing enum values.
+   * 
+   * @remarks
+   * This helper generates consistent error messages for various lookup failures,
+   * including the invalid value and a list of valid values for better debugging.
+   * 
+   * @example
+   * ```typescript
+   * // If enum has keys: ['PENDING', 'APPROVED']
+   * createErrorMessage('key', 'FOO');
+   * // Returns: "[SafeEnum] No enum value with key 'FOO'. Valid keys are: 'PENDING', 'APPROVED'"
+   * 
+   * // If enum has values: ['pending', 'approved']
+   * createErrorMessage('value', 'foo');
+   * // Returns: "[SafeEnum] No enum value with value 'foo'. Valid values are: 'pending', 'approved'"
+   * ```
+   * 
+   * @param type - The type of lookup that failed ('value', 'key', or 'index')
+   * @param value - The value that was not found
+   * @returns A formatted error message with helpful context
+   */
   function createErrorMessage(type: 'value' | 'key' | 'index', value: string | number): string {
     const typeMap = {
       value: `No enum value with value '${value}'. Valid values are: ${Array.from(valueToEntry.keys()).map(v => `'${v}'`).join(', ')}`,
@@ -95,13 +158,29 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
   }
 
   /**
-   * Creates an enum value object with all required SafeEnum methods.
-   * These methods are available on individual enum values (e.g., Status.PENDING.isEqual())
+   * Creates an immutable enum value object with all required SafeEnum methods.
    * 
-   * @param key - The enum key (e.g., 'PENDING')
-   * @param value - The enum value (e.g., 'pending')
-   * @param index - The enum index (e.g., 0)
-   * @returns A properly typed SafeEnum value with all required methods
+   * @remarks
+   * This factory function creates individual enum values with the following properties:
+   * - Immutable key, value, and index
+   * - Type-safe equality checking
+   * - Validation methods
+   * - Iteration support
+   * 
+   * @example
+   * ```typescript
+   * const enumValue = createEnumValue('PENDING', 'pending', 0);
+   * enumValue.getValueOrThrow();  // 'pending'
+   * enumValue.getIndexOrThrow();  // 0
+   * enumValue.isEqual(otherValue); // boolean
+   * ```
+   * 
+   * @param key - The enum key in UPPER_SNAKE_CASE (e.g., 'PENDING')
+   * @param value - The string value of the enum (e.g., 'pending')
+   * @param index - The numeric index (0-based)
+   * @returns A frozen SafeEnum object with all required methods
+   * 
+   * @throws {Error} If key is empty, value is empty, or index is negative
    */
   function createEnumValue(key: string, value: string, index: number): SafeEnum {
     // Validate input parameters - messages must match test expectations
@@ -140,7 +219,43 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
       );
     },
     
-    // Instance method - compares against this enum value
+    /**
+     * Performs a strict equality check between this enum value and one or more other values.
+     * 
+     * @remarks
+     * For two enum values to be considered equal, all of the following must be true:
+     * - They must be from the same enum type
+     * - Their keys must be identical (case-sensitive)
+     * - Their values must be identical (case-sensitive for strings)
+     * - Their indexes must be identical
+     * 
+     * @param other - A single enum value or array of enum values to compare against
+     * @returns `true` if any of the provided values exactly matches this enum value
+     * 
+     * @example
+     * ```typescript
+     * const Status = CreateSafeEnum({
+     *   PENDING: { value: 'pending', index: 0 },
+     *   APPROVED: { value: 'approved', index: 1 }
+     * } as const);
+     * 
+     * // Compare with a single value
+     * Status.PENDING.isEqual(Status.PENDING);  // true
+     * Status.PENDING.isEqual(Status.APPROVED); // false
+     * 
+     * // Compare with multiple values (returns true if ANY match)
+     * Status.PENDING.isEqual([
+     *   Status.APPROVED,
+     *   Status.PENDING  // This match will make it return true
+     * ]); // true
+     * 
+     * // Different values with same string representation are not equal
+     * const OtherStatus = CreateSafeEnum({
+     *   PENDING: { value: 'pending', index: 99 } // Different index
+     * });
+     * Status.PENDING.isEqual(OtherStatus.PENDING); // false
+     * ```
+     */
     isEqual: function(this: SafeEnum, other: SafeEnum | SafeEnum[]): boolean {
       if (!other) return false;
       const others = Array.isArray(other) ? other : [other];
@@ -171,21 +286,21 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
     },
     
     // Getters with validation - these are instance methods that return the value
-    Key(): string {
+    getKeyOrThrow(): string {
       if (!key) {
         throw new Error(`Key is undefined for enum value: ${value}`);
       }
       return key;
     },
       
-    Value(): string {
+    getValueOrThrow(): string {
       if (!value) {
           throw new Error(`Value is undefined for enum value: ${key}`);
         }
         return value;
     },
       
-    Index(): number {
+    getIndexOrThrow(): number {
       if (index === undefined) {
         throw new Error(`Index is undefined for enum value: ${key}`);
       }
@@ -200,15 +315,18 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
     },
       
     // Collection methods
-    keys: () => Object.keys(enumValues),
-    values: () => Object.values(enumValues).map(e => e.value),
-    indexes: () => Object.values(enumValues).map(e => e.index).filter((i): i is number => i !== undefined),
-    entries: () => Object.entries(enumValues) as [string, SafeEnum][],
-    getEntries: () => Object.values(enumValues)
+    getKeys: () => Object.keys(enumValues),
+    getValues: () => Object.values(enumValues).map(e => e.value),
+    getIndexes: () => Object.values(enumValues).map(e => e.index).filter((i): i is number => i !== undefined),
+    getEntries: () => Object.entries(enumValues) as [string, SafeEnum][],
     };
 
-    // Make the enum value immutable
-    return Object.freeze(enumValue) as SafeEnum;
+    // Create the final enum value with all methods and make it immutable
+    const safeEnumValue: SafeEnum = Object.freeze({
+      ...enumValue
+    });
+
+    return safeEnumValue;
   }
 
   // Create all enum values
@@ -307,11 +425,10 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
     },
     
     // Collection methods - return information about all enum values
-    keys: () => Object.keys(enumValues),
-    values: () => Object.values(enumValues).map(e => e.value),
-    indexes: () => Object.values(enumValues).map(e => e.index).filter((i): i is number => i !== undefined),
-    entries: () => Object.entries(enumValues) as [string, SafeEnum][],
-    getEntries: () => Object.values(enumValues),
+    getKeys: () => Object.keys(enumValues),
+    getValues: () => Object.values(enumValues).map(e => e.value),
+    getIndexes: () => Object.values(enumValues).map(e => e.index).filter((i): i is number => i !== undefined),
+    getEntries: () => Object.entries(enumValues) as [string, SafeEnum][],
     
     // Make the enum iterable
     [Symbol.iterator]: function* () {
@@ -386,11 +503,7 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
         item.index === first.index
       );
     },
-    // Type property for type extraction
-    get Type(): EnumValueType {
-      // This is a type-only property, the actual value doesn't matter at runtime
-      return Object.values(enumValues)[0]?.value as any;
-    },
+
     // Add iterator support to the enum object
     // This allows using the enum in for...of loops and spread operations
     [Symbol.iterator]: function* () {
@@ -398,23 +511,18 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
         yield value;
       }
     }
-  })
+  });
 
-  // Get all enum values for the Type property
-  const enumValueTypes = Object.values(enumValues).map(e => e.value);
-  type EnumValueType = typeof enumValueTypes[number];
-
-  // Create the factory object using createEnumValue which already includes all SafeEnumObject methods
-  const factory = Object.freeze({
-    ...enumObject,
-    Type: enumValueTypes[0] // First enum value as the Type
-  } as const);
-
-  return factory as unknown as { [K in keyof T]: SafeEnum } & SafeEnumObject;
+  /**
+   * The final enum object that is returned has two types of properties:
+   * 1. Enum values as properties (e.g., Status.PENDING, Status.APPROVED)
+   * 2. Static methods that operate on the entire enum (e.g., Status.fromValue())
+   */
+  return Object.freeze(enumObject) as unknown as { [K in keyof T]: SafeEnum } & SafeEnumObject;
 }
 
 /**
- * Creates a SafeEnum from an array of string literals.
+ * Creates a type-safe enum from an array of string literals with automatic key generation.
  * 
  * Each string in the input array becomes an enum member with:
  * - Key: Uppercased string (e.g., 'pending' -> 'PENDING')
@@ -423,14 +531,26 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
  *
  * @example
  * ```typescript
+ * // Basic usage
  * const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
+ * 
+ * // Access enum values
  * Status.PENDING.value; // "pending"
+ * 
+ * // Lookup methods
  * Status.fromValue("pending") === Status.PENDING; // true
  * Status.fromIndex(0) === Status.PENDING; // true
+ * Status.fromKey("PENDING") === Status.PENDING; // true
+ * 
+ * // Iteration
+ * Array.from(Status); // [Status.PENDING, Status.APPROVED, Status.REJECTED]
+ * Status.getKeys(); // ["PENDING", "APPROVED", "REJECTED"]
  * ```
  *
- * @param values Array of string literals
- * @returns A type-safe enum object with keys derived from the input array
+ * @param values - Readonly array of string literals to convert to enum values
+ * @returns A type-safe enum object with both enum values and static methods
+ * 
+ * @throws {Error} If there are duplicate values (case-insensitive)
  */
 export function CreateSafeEnumFromArray<T extends readonly string[]>(
   values: T

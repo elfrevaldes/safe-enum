@@ -81,21 +81,21 @@ describe("CreateSafeEnumFromArray", () => {
   describe("Accessors Methods", () => {
     describe("with valid properties", () => {
       it("Value()should return the value", () => {
-        expect(TestEnum.FOO.Value()).toBe('foo');
-        expect(TestEnum.BAR.Value()).toBe('bar');
-        expect(TestEnum.BAZ.Value()).toBe('baz');
+        expect(TestEnum.FOO.getValueOrThrow()).toBe('foo');
+        expect(TestEnum.BAR.getValueOrThrow()).toBe('bar');
+        expect(TestEnum.BAZ.getValueOrThrow()).toBe('baz');
       });
     
       it("Key()should return the key", () => {
-          expect(TestEnum.FOO.Key()).toBe('FOO');
-          expect(TestEnum.BAR.Key()).toBe('BAR');
-          expect(TestEnum.BAZ.Key()).toBe('BAZ');
+          expect(TestEnum.FOO.getKeyOrThrow()).toBe('FOO');
+          expect(TestEnum.BAR.getKeyOrThrow()).toBe('BAR');
+          expect(TestEnum.BAZ.getKeyOrThrow()).toBe('BAZ');
         });
       
         it("Index() should return the index", () => {
-          expect(TestEnum.FOO.Index()).toBe(0);
-          expect(TestEnum.BAR.Index()).toBe(1);
-          expect(TestEnum.BAZ.Index()).toBe(2);
+          expect(TestEnum.FOO.getIndexOrThrow()).toBe(0);
+          expect(TestEnum.BAR.getIndexOrThrow()).toBe(1);
+          expect(TestEnum.BAZ.getIndexOrThrow()).toBe(2);
         });
     });
     describe("accessing undefined properties", () => {
@@ -125,35 +125,27 @@ describe("CreateSafeEnumFromArray", () => {
 
   // Collection methods
   describe("Collection Methods", () => {
-    it("should return all keys with keys()", () => {
-      const keys = TestEnum.keys();
+    it("should return all keys with getKeys()", () => {
+      const keys = TestEnum.getKeys();
       expect(keys).toEqual(['FOO', 'BAR', 'BAZ']);
     });
     
-    it("should return all values with values()", () => {
-      const values = TestEnum.values();
+    it("should return all values with getValues()", () => {
+      const values = TestEnum.getValues();
       expect(values).toEqual(['foo', 'bar', 'baz']);
     });
     
-    it("should return all indexes with indexes()", () => {
-      const indexes = TestEnum.indexes();
+    it("should return all indexes with getIndexes()", () => {
+      const indexes = TestEnum.getIndexes();
       expect(indexes).toEqual([0, 1, 2]);
     });
 
-    it("should return all entries with entries()", () => {
-      const entries = TestEnum.entries();
+    it("should return all entries with getEntries()", () => {
+      const entries = TestEnum.getEntries();
       expect(entries).toHaveLength(3);
       expect(entries[0]).toEqual(['FOO', TestEnum.FOO]);
       expect(entries[1]).toEqual(['BAR', TestEnum.BAR]);
       expect(entries[2]).toEqual(['BAZ', TestEnum.BAZ]);
-    });
-    
-    it("should return all enum values with getEntries()", () => {
-      const entries = TestEnum.getEntries();
-      expect(entries).toContain(TestEnum.FOO);
-      expect(entries).toContain(TestEnum.BAR);
-      expect(entries).toContain(TestEnum.BAZ);
-      expect(entries).toHaveLength(3);
     });
   });
   
@@ -280,9 +272,10 @@ describe("CreateSafeEnumFromArray", () => {
       expect(entries).toHaveLength(3);
       
       // Find each entry by its value
-      const zeroEntry = entries.find(e => e.Value() === '0');
-      const falseEntry = entries.find(e => e.Value() === 'false');
-      const spaceEntry = entries.find(e => e.Value() === ' ');
+      // Each entry is a tuple of [key, SafeEnum], so we access the SafeEnum instance at index 1
+      const zeroEntry = entries.find(([_, e]) => e.getValueOrThrow() === '0')?.[1];
+      const falseEntry = entries.find(([_, e]) => e.getValueOrThrow() === 'false')?.[1];
+      const spaceEntry = entries.find(([_, e]) => e.getValueOrThrow() === ' ')?.[1];
       
       // All entries should be found
       expect(zeroEntry).toBeDefined();
@@ -296,7 +289,7 @@ describe("CreateSafeEnumFromArray", () => {
         expect(FalsyEnum.fromValue(' ')).toBe(spaceEntry);
         
         // Verify indices are sequential and zero-based
-        const indices = entries.map(e => e.Index());
+        const indices = entries.map(([_, e]) => e.getIndexOrThrow());
         expect(indices).toEqual([0, 1, 2]);
         
         // Verify lookup by index
@@ -309,17 +302,17 @@ describe("CreateSafeEnumFromArray", () => {
     it("should handle empty arrays", () => {
       const EmptyEnum = CreateSafeEnumFromArray([] as const);
       expect(EmptyEnum.getEntries()).toEqual([]);
-      expect(EmptyEnum.keys()).toEqual([]);
-      expect(EmptyEnum.values()).toEqual([]);
-      expect(EmptyEnum.entries()).toEqual([]);
-      expect(EmptyEnum.indexes()).toEqual([]);
+      expect(EmptyEnum.getKeys()).toEqual([]);
+      expect(EmptyEnum.getValues()).toEqual([]);
+      expect(EmptyEnum.getEntries()).toEqual([]);
+      expect(EmptyEnum.getIndexes()).toEqual([]);
     });
     
     it("should handle arrays with one element", () => {
       const SingleEnum = CreateSafeEnumFromArray(['test'] as const);
       expect(SingleEnum.TEST).toBeDefined();
-      expect(SingleEnum.TEST.Value()).toBe('test');
-      expect(SingleEnum.TEST.Index()).toBe(0);
+      expect(SingleEnum.TEST.getValueOrThrow()).toBe('test');
+      expect(SingleEnum.TEST.getIndexOrThrow()).toBe(0);
       expect(SingleEnum.fromValue('test')).toBe(SingleEnum.TEST);
       expect(SingleEnum.fromIndex(0)).toBe(SingleEnum.TEST);
     });

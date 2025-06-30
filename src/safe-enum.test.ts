@@ -262,7 +262,7 @@ describe("SafeEnum", () => {
   describe("Utility Methods", () => {
     describe("keys()", () => {
       it("should return all enum keys", () => {
-        const keys = TestEnum.keys()
+        const keys = TestEnum.getKeys()
         expect(keys).toHaveLength(3);
         expect(keys).toContain("FOO");
         expect(keys).toContain("BAR");
@@ -271,13 +271,13 @@ describe("SafeEnum", () => {
 
       it("should return an empty array for empty enums", () => {
         const EmptyEnum = CreateSafeEnum({} as const);
-        expect(EmptyEnum.keys()).toEqual([]);
+        expect(EmptyEnum.getKeys()).toEqual([]);
       });
     });
 
     describe("entries()", () => {
       it("should return all enum entries as [key, value] pairs", () => {
-        const entries = TestEnum.entries();
+        const entries = TestEnum.getEntries();
         expect(entries).toHaveLength(3);
 
         const entryMap = new Map(entries);
@@ -288,21 +288,22 @@ describe("SafeEnum", () => {
 
       it("should return an empty array for empty enums", () => {
         const EmptyEnum = CreateSafeEnum({} as const);
-        expect(EmptyEnum.entries()).toEqual([]);
+        expect(EmptyEnum.getEntries()).toEqual([]);
       });
     });
 
     describe("Iterator", () => {
       it("should be iterable with for...of", () => {
-        const values = Array.from(TestEnum.getEntries());
-        expect(values).toHaveLength(3);
+        const entries = TestEnum.getEntries();
+        expect(entries).toHaveLength(3);
+        const values = entries.map(([_, value]) => value);
         expect(values).toContain(TestEnum.FOO);
         expect(values).toContain(TestEnum.BAR);
         expect(values).toContain(TestEnum.BAZ);
       });
 
       it("should work with spread operator", () => {
-        const values = [...TestEnum.getEntries()];
+        const values = [...TestEnum.getEntries()].map(([_, value]) => value);
         expect(values).toHaveLength(3);
         expect(values).toContain(TestEnum.FOO);
       });
@@ -445,7 +446,7 @@ describe("SafeEnum", () => {
   describe("Utility Methods", () => {
     describe("values()", () => {
       it("should return an array of all enum values", () => {
-        const values = TestEnum.values();
+        const values = TestEnum.getValues();
         expect(values).toHaveLength(3);
         expect(values).toContain("foo");
         expect(values).toContain("bar");
@@ -454,7 +455,7 @@ describe("SafeEnum", () => {
 
       it("should return an empty array for empty enums", () => {
         const EmptyEnum = CreateSafeEnum({} as const)
-        expect(EmptyEnum.values()).toEqual([])
+        expect(EmptyEnum.getValues()).toEqual([])
       });
     });
 
@@ -462,14 +463,15 @@ describe("SafeEnum", () => {
       it("should return an array of all enum entries", () => {
         const entries = TestEnum.getEntries();
         expect(entries).toHaveLength(3);
-        expect(entries.map(e => e.value)).toContain("foo");
-        expect(entries.map(e => e.key)).toContain("FOO");
+        // Each entry is a tuple of [key, SafeEnum], so we need to access the second element for the SafeEnum instance
+        expect(entries.map(([_, e]) => e.getValueOrThrow())).toContain("foo");
+        expect(entries.map(([key, _]) => key)).toContain("FOO");
       });
     });
 
     describe("indexes()", () => {
       it("should return an array of all enum indices", () => {
-        const indices = TestEnum.indexes();
+        const indices = TestEnum.getIndexes();
         expect(indices).toHaveLength(3);
         expect(indices).toContain(0);
         expect(indices).toContain(1);
@@ -482,7 +484,7 @@ describe("SafeEnum", () => {
           B: { value: "b", index: 20 },
           C: { value: "c" } // Auto-assigned
         } as const)
-        const indices = CustomEnum.indexes();
+        const indices = CustomEnum.getIndexes();
         expect(indices).toHaveLength(3);
         expect(indices).toContain(10);
         expect(indices).toContain(20);
@@ -491,7 +493,7 @@ describe("SafeEnum", () => {
 
       it("should return an empty array for empty enums", () => {
         const EmptyEnum = CreateSafeEnum({} as const)
-        expect(EmptyEnum.indexes()).toEqual([])
+        expect(EmptyEnum.getIndexes()).toEqual([])
       });
     });
   });
@@ -574,10 +576,10 @@ describe("SafeEnum", () => {
   describe("edge cases", () => {
     it("should handle empty enum", () => {
       const EmptyEnum = CreateSafeEnum({} as const);
-      expect(EmptyEnum.keys()).toEqual([]);
-      expect(EmptyEnum.entries()).toEqual([]);
-      expect(Array.from(EmptyEnum.values())).toEqual([]);
-      expect(Array.from(EmptyEnum.indexes())).toEqual([]);
+      expect(EmptyEnum.getKeys()).toEqual([]);
+      expect(EmptyEnum.getEntries()).toEqual([]);
+      expect(Array.from(EmptyEnum.getValues())).toEqual([]);
+      expect(Array.from(EmptyEnum.getIndexes())).toEqual([]);
       expect(Object.isFrozen(EmptyEnum)).toBe(true);
     });
 
@@ -586,12 +588,17 @@ describe("SafeEnum", () => {
         ONLY: { value: "only", index: 0 }
       } as const);
 
-      expect(SingleEnum.keys()).toEqual(["ONLY"]);
-      expect(SingleEnum.entries()).toEqual([["ONLY", SingleEnum.ONLY]]);
-
-      const singleValues = SingleEnum.getEntries();
-      expect(singleValues).toEqual([SingleEnum.ONLY]);
-      expect(SingleEnum.values()).toEqual(['only']);
+      expect(SingleEnum.getKeys()).toEqual(["ONLY"]);
+      const entries = SingleEnum.getEntries();
+      
+      // Check the structure of the entries array
+      expect(entries).toHaveLength(1);
+      expect(entries[0]).toHaveLength(2);
+      expect(entries[0][0]).toBe("ONLY");
+      expect(entries[0][1]).toBe(SingleEnum.ONLY);
+      
+      // Verify the values array
+      expect(SingleEnum.getValues()).toEqual(['only']);
     });
 
     it("should handle sparse indices", () => {
@@ -619,11 +626,11 @@ describe("SafeEnum", () => {
       expect(SparseEnum.C.index).not.toBe(20);
       expect(SparseEnum.C.index).toBeGreaterThanOrEqual(0);
 
-      const indices = SparseEnum.indexes();
+      const indices = SparseEnum.getIndexes();
       expect(indices).toContain(10);
       expect(indices).toContain(20);
       expect(indices).toContain(SparseEnum.C.index);
-      expect(SparseEnum.values()).toEqual(['a', 'b', 'c']);
+      expect(SparseEnum.getValues()).toEqual(['a', 'b', 'c']);
     });
 
     it("should throw error for duplicate indices", () => {

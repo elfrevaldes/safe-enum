@@ -1,45 +1,109 @@
-// Base interface for enum values passed to CreateSafeEnum
+/**
+ * Base interface for enum values used in CreateSafeEnum.
+ * This interface defines the minimum required properties for enum values.
+ * 
+ * @remarks
+ * This is an internal interface used by the type system. In most cases,
+ * you should use the {@link SafeEnum} interface instead.
+ * 
+ * @property {string} value - The string value of the enum (required)
+ * @property {string} [key] - The key of the enum (optional, auto-generated if not provided)
+ * @property {number} [index] - The index of the enum (optional, auto-assigned if not provided)
+ */
 export interface SafeEnumBase {
+  /** The string value of the enum (e.g., 'pending') */
   readonly value: string;
-  // Made optional to support createFromArray
+  
+  /** 
+   * The key of the enum (e.g., 'PENDING')
+   * @remarks This is optional in the base interface but will always be present in the final SafeEnum
+   */
   readonly key?: string;
-  readonly index?: number; // Made optional to support auto-indexing
+  
+  /** 
+   * The numeric index of the enum
+   * @remarks If not provided, will be auto-assigned based on declaration order
+   */
+  readonly index?: number;
 }
 /**
- * Type utility to extract the type of enum values
+ * Type utility to extract the union type of all possible enum values from an enum object.
+ * 
+ * @template T - The type of the enum object (must have string values with a 'value' property)
+ * 
+ * @example
+ * ```typescript
+ * const HttpMethods = CreateSafeEnum({
+ *   GET: { value: 'GET', index: 0 },
+ *   POST: { value: 'POST', index: 1 },
+ *   PUT: { value: 'PUT', index: 2 }
+ * } as const);
+ * 
+ * // Type is 'GET' | 'POST' | 'PUT'
+ * type HttpMethod = EnumType<typeof HttpMethods>;
+ * 
+ * // Usage in function parameters
+ * function handleRequest(method: EnumType<typeof HttpMethods>) {
+ *   // method is type-safe and can only be 'GET', 'POST', or 'PUT'
+ * }
+ * ```
  */
 export type EnumType<T extends { [key: string]: { value: string } }> = T[keyof T]['value'];
 
 /**
- * The SafeEnum type represents a type-safe enum value with lookup methods.
- * Each enum value has a key, value, and index, along with utility methods.
+ * Represents a type-safe enum value with key, value, and index properties,
+ * along with utility methods for comparison and type checking.
+ * 
+ * @remarks
+ * The SafeEnum interface is the core of the type-safe enum system. Each enum value
+ * is an immutable object with the following properties:
+ * - `key`: The enum constant name (e.g., 'PENDING')
+ * - `value`: The string value (e.g., 'pending')
+ * - `index`: The numeric index (0-based)
  * 
  * @example
+ * ### Basic Usage
  * ```typescript
- * // Simple usage with type export
+ * // Create an enum
  * const Status = CreateSafeEnum({
  *   PENDING: { value: 'pending', index: 0 },
  *   APPROVED: { value: 'approved', index: 1 },
  *   REJECTED: { value: 'rejected', index: 2 }
  * } as const);
  * 
- * // Usage:
- * const status: Status = Status.PENDING
- * console.log(status.value); // 'pending'
- * 
- * // Advanced usage with explicit type export
- * export const RequestType = CreateSafeEnum({
- *   POST: { value: 'POST', index: 0 },
- *   GET: { value: 'GET', index: 1 },
- *   // ...
- * } as const);
- * // This will work with the updated types
- * export type RequestType = SafeEnum
- * 
- * // Usage:
- * const method: RequestType = RequestType.fromKey(postString);
- * console.log(method.value); // 'POST'
+ * // Type-safe usage
+ * const status: Status = Status.PENDING;
+ * console.log(status.value);  // 'pending'
+ * console.log(status.index);  // 0
  * ```
+ * 
+ * @example
+ * ### With Explicit Type Export
+ * ```typescript
+ * // Create and export the enum
+ * export const HttpMethod = CreateSafeEnum({
+ *   GET: { value: 'GET', index: 0 },
+ *   POST: { value: 'POST', index: 1 },
+ *   PUT: { value: 'PUT', index: 2 },
+ *   DELETE: { value: 'DELETE', index: 3 }
+ * } as const);
+ * 
+ * // Export the type for use in other files
+ * export type HttpMethod = SafeEnum;
+ * 
+ * // Type-safe function parameter
+ * function fetchData(method: HttpMethod, url: string) {
+ *   // method is guaranteed to be a valid HttpMethod
+ *   console.log(`Making ${method.value} request to ${url}`);
+ * }
+ * 
+ * // Usage
+ * fetchData(HttpMethod.GET, '/api/data');
+ * // fetchData('GET', '/api/data'); // Type error: string is not assignable to HttpMethod
+ * ```
+ * 
+ * @see {@link CreateSafeEnum} - Function to create type-safe enums
+ * @see {@link CreateSafeEnumFromArray} - Alternative factory for array-based enum creation
  */
 // Interface for enum value instances
 export interface SafeEnum extends SafeEnumBase {
@@ -52,7 +116,7 @@ export interface SafeEnum extends SafeEnumBase {
   /** The numeric index of the enum */
   readonly index: number;
   
-    //#region Instance Methods
+  //#region Instance Methods
   // These methods are available on enum value instances
   
   //#region Type guards
@@ -113,44 +177,87 @@ export interface SafeEnum extends SafeEnumBase {
    * Returns the key of the enum value or throws if undefined
    * @returns The enum key as a string
    */
-  Key(): string;
+  getKeyOrThrow(): string;
   
   /**
    * Returns the value of the enum or throws if undefined
    * @returns The enum value as a string
    */
-  Value(): string;
+  getValueOrThrow(): string;
   
   /**
    * Returns the index of the enum or throws if undefined
    * @returns The enum index as a number
    */
-  Index(): number;
+  getIndexOrThrow(): number;
   //#endregion
 }
 
-// Interface for the enum object (static methods)
+/**
+ * Represents the enum object that contains both the enum values and static methods.
+ * This interface defines the shape of the object returned by {@link CreateSafeEnum}.
+ * 
+ * @remarks
+ * The SafeEnumObject serves as both a namespace for enum values and a container for
+ * static methods that operate on the enum. It allows for:
+ * - Direct access to enum values (e.g., `Status.PENDING`)
+ * - Lookup methods (e.g., `Status.fromValue('pending')`)
+ * - Type checking (e.g., `Status.isEnumValue(someValue)`)
+ * - Iteration (e.g., `Array.from(Status)`)
+ * 
+ * @example
+ * ```typescript
+ * // Create an enum
+ * const Status = CreateSafeEnum({
+ *   PENDING: { value: 'pending', index: 0 },
+ *   APPROVED: { value: 'approved', index: 1 },
+ *   REJECTED: { value: 'rejected', index: 2 }
+ * } as const);
+ * 
+ * // Access enum values
+ * const status = Status.PENDING;
+ * 
+ * // Use static methods
+ * const pending = Status.fromValue('pending');
+ * const isValid = Status.hasValue('pending');
+ * 
+ * // Iterate over values
+ * for (const status of Status) {
+ *   console.log(status.toString());
+ * }
+ * ```
+ * 
+ * @see {@link SafeEnum} - The type of individual enum values
+ * @see {@link CreateSafeEnum} - Function to create type-safe enums
+ */
 export interface SafeEnumObject {
-  // Enum values - these will be populated by CreateSafeEnum
+  /**
+   * Index signature for enum values and static methods.
+   * @internal
+   */
   [key: string]: SafeEnum | ((...args: any[]) => any);
   
   // Factory methods
+  /**
+   * Returns the enum value matching the given value, or undefined if not found
+   * @param value The value to search for
+   * @returns The enum value, or undefined if not found
+   */
   fromValue(value: string): SafeEnum | undefined;
+  /**
+   * Returns the enum value matching the given key, or undefined if not found
+   * @param key The key to search for
+   * @returns The enum value, or undefined if not found
+   */
   fromKey(key: string): SafeEnum | undefined;
+  /**
+   * Returns the enum value matching the given index, or undefined if not found
+   * @param index The index to search for
+   * @returns The enum value, or undefined if not found
+   */
   fromIndex(index: number): SafeEnum | undefined;
   
-  // Type guards
-  isEnumValue(value: unknown): value is SafeEnum;
-  
-  // Collection methods
-  keys(): string[];
-  values(): string[];
-  indexes(): number[];
-  entries(): [string, SafeEnum][];
-  getEntries(): SafeEnum[];
-  
-  // Iterator support
-  [Symbol.iterator](): IterableIterator<SafeEnum>;
+  // Iterator support - allows for...of iteration over enum values
   
   //#region Type guards
   /**
@@ -213,69 +320,54 @@ export interface SafeEnumObject {
   /**
    * Returns an array of all enum keys
    * @example
-   * const statusKeys = Status.keys(); // ['PENDING', 'APPROVED', 'REJECTED']
+   * const statusKeys = Status.getKeys(); // ['PENDING', 'APPROVED', 'REJECTED']
    */
-  keys(): string[];
+  getKeys(): string[];
   
   /**
-   * Returns an array of all enum values
+   * Returns an array of all enum values as strings
    * @example
-   * const statusValues = Status.values(); // ['pending', 'approved', 'rejected']
+   * const statusValues = Status.getValues(); // ['pending', 'approved', 'rejected']
    */
-  values(): string[];
+  getValues(): string[];
   
   /**
    * Returns an array of all enum indexes
    * @example
-   * const statusIndexes = Status.indexes(); // [0, 1, 2]
+   * const statusIndexes = Status.getIndexes(); // [0, 1, 2]
    */
-  indexes(): number[];
+  getIndexes(): number[];
   
   /**
    * Returns an array of all enum entries as [key, value] pairs
    * @example
-   * const statusEntries = Status.entries(); // [['PENDING', 'pending'], ['APPROVED', 'approved'], ['REJECTED', 'rejected']]
+   * const statusEntries = Status.getEntries(); // [['PENDING', SafeEnum], ['APPROVED', SafeEnum], ['REJECTED', SafeEnum]]
+   * @returns Array of [key, SafeEnum] tuples
    */
-  entries(): [string, SafeEnum][];
-  
-  /**
-   * Returns an array of all enum values as full objects
-   * @example
-   * const statusEntries = Status.getEntries(); // [{ key: 'PENDING', value: 'pending', index: 0 }, { key: 'APPROVED', value: 'approved', index: 1 }, { key: 'REJECTED', value: 'rejected', index: 2 }]
-   */
-  getEntries(): SafeEnum[];
+  getEntries(): [string, SafeEnum][];
   
   /**
    * Returns the key of the enum value or Throws if undefined
    * @example
-   * const statusKey = Status.PENDING.Key(); // 'PENDING'
+   * const statusKey = Status.PENDING.getKey(); // 'PENDING'
    */
-  Key(): string;
+  getKey(): string;
   
   /**
    * Returns the value of the enum or Throws if undefined
    * @example
-   * const statusValue = Status.PENDING.Value(); // 'pending'
+   * const statusValue = Status.PENDING.getValue(); // 'pending'
    */
-  Value(): string;
+  getValue(): string;
   
   /**
    * Returns the index of the enum or Throws if undefined
    * @example
-   * const statusIndex = Status.PENDING.Index(); // 0
+   * const statusIndex = Status.PENDING.getIndex(); // 0
    */
-  Index(): number;
+  getIndex(): number;
   
   //#region Iterator
   [Symbol.iterator](): IterableIterator<SafeEnum>;
-  //#endregion
-  
-  //#region Type information
-  /**
-   * Returns an array of all enum values
-   * @example
-   * const statusValues = Status.values(); // ['pending', 'approved', 'rejected']
-   */
-  values(): string[];
   //#endregion
 }

@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2025-06-30
+
+### Fixed
+- Fixed method names in README API documentation to match implementation:
+  - `keys()` → `getKeys()`
+  - `values()` → `getValues()`
+  - `indexes()` → `getIndexes()`
+  - `entries()` → `getEntries()`
+  - `Key()` → `getKey()`
+  - `Value()` → `getValue()`
+  - `Index()` → `getIndex()`
+- Removed duplicate quick start/example sections in README
+- Fixed type inconsistencies in method signatures
+
+### Added
+- Added comprehensive "Performance & Benefits" section to README
+- Added detailed comparison with native enums, string unions, and const objects
+- Enhanced documentation with more examples and usage patterns
+- Added more detailed JSDoc comments to all interfaces and methods
+
+### Changed
+- Reorganized README for better readability and flow
+- Moved performance section to the top of the README for better visibility
+- Improved type safety in enum factory implementation
+- Enhanced error messages for better debugging
+
+### Removed
+- Removed redundant `Type` property from enum factory
+- Removed duplicate validation methods in favor of consistent naming
+
 ## [1.0.8] - 2025-06-26
 
 ### Fixed

@@ -112,32 +112,32 @@ describe("CreateSafeEnum", () => {
   describe("Accessors Methods", () => {
     describe("with valid properties", () => {
       it("Value() should return the value", () => {
-        expect(TestEnum.FOO.Value()).toBe('foo');
-        expect(TestEnum.BAR.Value()).toBe('bar');
-        expect(TestEnum.BAZ.Value()).toBe('baz');
+        expect(TestEnum.FOO.getValueOrThrow()).toBe('foo');
+        expect(TestEnum.BAR.getValueOrThrow()).toBe('bar');
+        expect(TestEnum.BAZ.getValueOrThrow()).toBe('baz');
       });  
       it("should have correct instance methods", () => {
         const value = TestEnum.FOO;
         
         // Test Value() method
-        expect(value.Value()).toBe('foo');
+        expect(value.getValueOrThrow()).toBe('foo');
         
         // Test Key() method
-        expect(value.Key()).toBe('FOO');
+        expect(value.getKeyOrThrow()).toBe('FOO');
         
         // Test Index() method
-        expect(value.Index()).toBe(0);
+        expect(value.getIndexOrThrow()).toBe(0);
       });  
       it("Key() should return the key", () => {
-        expect(TestEnum.FOO.Key()).toBe('FOO');
-        expect(TestEnum.BAR.Key()).toBe('BAR');
-        expect(TestEnum.BAZ.Key()).toBe('BAZ');
+        expect(TestEnum.FOO.getKeyOrThrow()).toBe('FOO');
+        expect(TestEnum.BAR.getKeyOrThrow()).toBe('BAR');
+        expect(TestEnum.BAZ.getKeyOrThrow()).toBe('BAZ');
       });
     
       it("Index() should return the index", () => {
-        expect(TestEnum.FOO.Index()).toBe(0);
-        expect(TestEnum.BAR.Index()).toBe(1);
-        expect(TestEnum.BAZ.Index()).toBe(2);
+        expect(TestEnum.FOO.getIndexOrThrow()).toBe(0);
+        expect(TestEnum.BAR.getIndexOrThrow()).toBe(1);
+        expect(TestEnum.BAZ.getIndexOrThrow()).toBe(2);
       });
     });
     
@@ -194,33 +194,34 @@ describe("CreateSafeEnum", () => {
   // Collection methods
   describe("Collection Methods", () => {
     it("should return all keys with keys()", () => {
-      const keys = TestEnum.keys();
+      const keys = TestEnum.getKeys();
       expect(keys).toEqual(['FOO', 'BAR', 'BAZ']);
     });
     
     it("should return all values with values()", () => {
-      const values = TestEnum.values();
+      const values = TestEnum.getValues();
       expect(values).toEqual(['foo', 'bar', 'baz']);
     });
 
     it("should return all indexes with indexes()", () => {
-      const indexes = TestEnum.indexes();
+      const indexes = TestEnum.getIndexes();
       expect(indexes).toEqual([0, 1, 2]);
     });
     
     it("should return all entries with entries()", () => {
-      const entries = TestEnum.entries();
+      const entries = TestEnum.getEntries();
       expect(entries).toHaveLength(3);
       expect(entries[0]).toEqual(['FOO', TestEnum.FOO]);
       expect(entries[1]).toEqual(['BAR', TestEnum.BAR]);
       expect(entries[2]).toEqual(['BAZ', TestEnum.BAZ]);
     });
     
-    it("should return all enum values with getEntries()", () => {
+    it("should return all enum entries as [key, value] tuples with getEntries()", () => {
       const entries = TestEnum.getEntries();
-      expect(entries).toContain(TestEnum.FOO);
-      expect(entries).toContain(TestEnum.BAR);
-      expect(entries).toContain(TestEnum.BAZ);
+      // Check that entries contains the expected tuples
+      expect(entries).toContainEqual(['FOO', TestEnum.FOO]);
+      expect(entries).toContainEqual(['BAR', TestEnum.BAR]);
+      expect(entries).toContainEqual(['BAZ', TestEnum.BAZ]);
       expect(entries).toHaveLength(3);
     });
   });
@@ -280,9 +281,9 @@ describe("CreateSafeEnum", () => {
       });
       
       // '0' is falsy but valid as a string
-      expect(FalsyEnum.ZERO_STR.Value()).toBe('0');
-      expect(FalsyEnum.FALSE_STR.Value()).toBe('false');
-      expect(FalsyEnum.SPACE.Value()).toBe(' ');
+      expect(FalsyEnum.ZERO_STR.getValueOrThrow()).toBe('0');
+      expect(FalsyEnum.FALSE_STR.getValueOrThrow()).toBe('false');
+      expect(FalsyEnum.SPACE.getValueOrThrow()).toBe(' ');
       
       // Note: fromValue('0') will return ZERO_AS_STR because it was added last
       expect(FalsyEnum.fromValue('0')).toBe(FalsyEnum.ZERO_AS_STR);
@@ -290,8 +291,8 @@ describe("CreateSafeEnum", () => {
       expect(FalsyEnum.fromValue(' ')).toBe(FalsyEnum.SPACE);
       
       // Verify indices are handled correctly (non-zero)
-      expect(FalsyEnum.ZERO_STR.Index()).toBe(1);
-      expect(FalsyEnum.ZERO_AS_STR.Index()).toBe(4);
+      expect(FalsyEnum.ZERO_STR.getIndexOrThrow()).toBe(1);
+      expect(FalsyEnum.ZERO_AS_STR.getIndexOrThrow()).toBe(4);
       expect(FalsyEnum.fromIndex(1)).toBe(FalsyEnum.ZERO_STR);
       expect(FalsyEnum.fromIndex(4)).toBe(FalsyEnum.ZERO_AS_STR);
     });
@@ -371,9 +372,9 @@ describe("CreateSafeEnum", () => {
   describe("Edge Cases", () => {
     it("should handle empty enum object", () => {
       const EmptyEnum = CreateSafeEnum({});
-      expect(EmptyEnum.keys()).toEqual([]);
-      expect(EmptyEnum.values()).toEqual([]);
-      expect(EmptyEnum.entries()).toEqual([]);
+      expect(EmptyEnum.getKeys()).toEqual([]);
+      expect(EmptyEnum.getValues()).toEqual([]);
+      expect(EmptyEnum.getEntries()).toEqual([]);
     });
     
     it("should handle custom indices", () => {
