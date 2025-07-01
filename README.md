@@ -39,7 +39,20 @@ A type-safe, flexible enum factory for TypeScript with runtime validation and ty
 - **Comprehensive API** - All the utility methods you need
 - **Battle-tested** - Tested with [Vitest](https://vitest.dev/) to ensure 100% test coverage
 
-## Comparison with Other Approaches
+### Comparison with Other Approaches
+
+| Feature            | Native Enum                                        | String Unions                        | Const Objects                                  | type-safe-enum                        |
+| ------------------ | -------------------------------------------------- | ------------------------------------ | ---------------------------------------------- | ------------------------------------- |
+| Type Safety        | <div align="center">✅</div>                        | <div align="center">✅</div>          | <div align="center">⚠️<br>(requires care)</div> | <div align="center">✅</div>           |
+| Runtime Safety     | <div align="center">❌</div>                        | <div align="center">❌</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
+| IntelliSense       | <div align="center">✅</div>                        | <div align="center">✅</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
+| Reverse Lookup     | <div align="center">✅<br>(but unsafe)</div>        | <div align="center">❌</div>          | <div align="center">❌</div>                    | <div align="center">✅</div>           |
+| JSON Serialization | <div align="center">❌ <br>(numeric issues)</div>   | <div align="center">✅</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
+| Maintenance        | <div align="center">❌ <br>(verbose)</div>          | <div align="center">✅</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
+| String Comparison  | <div align="center">❌ <br>(can be confusing)</div> | <div align="center">❌</div>          | <div align="center">❌</div>                    | <div align="center">✅</div>           |
+| Iteration          | <div align="center">❌</div>                        | <div align="center">❌</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
+| Bundle Size        | <div align="center">✅<br>(0kB)</div>               | <div align="center">✅<br>(0kB)</div> | <div align="center">✅<br>(0kB)</div>           | <div align="center">✅<br>(~2kB)</div> |
+| Tree Shaking       | <div align="center">❌</div>                        | <div align="center">✅</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
 
 ### Native Enum
 ```typescript
@@ -87,9 +100,8 @@ type Role = typeof Role[keyof typeof Role];
 * Still no .fromValue() or .fromKey()
 * No index, no rich object model
 * No safe .map()/.entries(), just raw Object.entries()
-* No JSON.stringify() support
-* No tree-shaking
-* No IntelliSense support
+* No default constObject.stringify() support
+* Some IntelliSense support
 * No reverse lookups
 * No automatic indexing
 */
@@ -104,9 +116,9 @@ function isValidRole(role: string): role is Role {
 * Full runtime validation
 * Safe .fromValue()/.fromKey()
 * Safe .map()/.entries()
-* JSON.stringify() support
+* safeEnum.toJSON() support
 * Tree-shaking
-* IntelliSense support
+* Full IntelliSense support
 * Reverse lookups
 * Automatic indexing
 */
@@ -138,6 +150,11 @@ function canEdit(role: RoleEnum): boolean {
   return role.isEqual([RoleEnum.ADMIN, RoleEnum.EDITOR]);
 }
 ```
+## Requirements
+
+- Node.js >= 16.0.0
+- TypeScript >= 4.9.0
+- npm >= 7.0.0 or yarn >= 1.22.0 or pnpm >= 6.0.0
 
 ## Installation
 
@@ -148,37 +165,6 @@ yarn add type-safe-enum
 # or
 pnpm add type-safe-enum
 ```
-
-## Requirements
-
-- Node.js >= 16.0.0
-- TypeScript >= 4.9.0
-- npm >= 7.0.0 or yarn >= 1.22.0 or pnpm >= 6.0.0
-
-## Why type-safe-enum?
-
-### Comparison with Other Approaches
-
-| Feature            | Native Enum                                        | String Unions               | Const Objects                                  | type-safe-enum              |
-| ------------------ | -------------------------------------------------- | --------------------------- | ---------------------------------------------- | --------------------------- |
-| Type Safety        | <div align="center">✅</div>                        | <div align="center">✅</div> | <div align="center">⚠️<br>(requires care)</div> | <div align="center">✅</div> |
-| Runtime Safety     | <div align="center">❌</div>                        | <div align="center">❌</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
-| IntelliSense       | <div align="center">✅</div>                        | <div align="center">✅</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
-| Reverse Lookup     | <div align="center">✅<br>(but unsafe)</div>        | <div align="center">❌</div> | <div align="center">❌</div>                    | <div align="center">✅</div> |
-| JSON Serialization | <div align="center">❌ <br>(numeric issues)</div>   | <div align="center">✅</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
-| Maintenance        | <div align="center">❌ <br>(verbose)</div>          | <div align="center">✅</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
-| String Comparison  | <div align="center">❌ <br>(can be confusing)</div> | <div align="center">❌</div> | <div align="center">❌</div>                    | <div align="center">✅</div> |
-| Iteration          | <div align="center">❌</div>                        | <div align="center">❌</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
-| Bundle Size        | <div align="center">✅<br>(0kB)</div>              | <div align="center">✅<br>(0kB)</div> | <div align="center">✅<br>(0kB)</div> | <div align="center">✅<br>(~2kB)</div> |
-| Tree Shaking       | <div align="center">❌</div>                        | <div align="center">✅</div> | <div align="center">✅</div>                    | <div align="center">✅</div> |
-
-## ChatGPT's Opinion on type-safe-enum
-
-> "Unlike traditional TypeScript enums, which can be opaque and error-prone (especially with numeric values and reverse mappings), type-safe-enum uses object literals or classes to infer literal union types that are transparent, predictable, and safe. It embraces the full power of TypeScript's type system to ensure better IntelliSense, stricter compile-time checks, and improved maintainability — particularly in large codebases and shared libraries.
-> 
-> I wholeheartedly recommend type-safe-enum over native enums for most modern TypeScript projects. It's a cleaner, more reliable way to define constants and enum-like structures, without the pitfalls of traditional enums."
-
-This endorsement highlights how type-safe-enum addresses common pain points with TypeScript's native enums while providing a more robust and developer-friendly experience.
 
 ## Type System Overview
 
@@ -431,7 +417,13 @@ Creates a type-safe enum from an array of string literals.
 
 MIT © Elfre Valdes
 
-## acknowledgments
+## Acknowledgments
 - David Jones
 - Scott Thorsen
 - Charles Hugo
+
+## ChatGPT's Opinion on type-safe-enum
+
+> "Unlike traditional TypeScript enums, which can be opaque and error-prone (especially with numeric values and reverse mappings), type-safe-enum uses object literals or classes to infer literal union types that are transparent, predictable, and safe. It embraces the full power of TypeScript's type system to ensure better IntelliSense, stricter compile-time checks, and improved maintainability — particularly in large codebases and shared libraries.
+> 
+> I highly recommend type-safe-enum over native enums for most modern TypeScript projects. It's a cleaner, more reliable way to define constants and enum-like structures, without the pitfalls of traditional enums."
