@@ -43,7 +43,7 @@ A type-safe, flexible enum factory for TypeScript with runtime validation and ty
 
 | Feature            | Native Enum                                        | String Unions                        | Const Objects                                  | type-safe-enum                        |
 | ------------------ | -------------------------------------------------- | ------------------------------------ | ---------------------------------------------- | ------------------------------------- |
-| Type Safety        | <div align="center">✅</div>                        | <div align="center">✅</div>          | <div align="center">⚠️<br>(requires care)</div> | <div align="center">✅</div>           |
+| Type Safety        | <div align="center">✅</div>                        | <div align="center">✅</div>          | <div align="center">⚠️<br>(requires care)</div> | <div align="center">✅✅<br>(nominal typing)</div> |
 | Runtime Safety     | <div align="center">❌</div>                        | <div align="center">❌</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
 | IntelliSense       | <div align="center">✅</div>                        | <div align="center">✅</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
 | Reverse Lookup     | <div align="center">✅<br>(but unsafe)</div>        | <div align="center">❌</div>          | <div align="center">❌</div>                    | <div align="center">✅</div>           |
@@ -123,31 +123,33 @@ function isValidRole(role: string): role is Role {
 * Automatic indexing
 */
 const Role = CreateSafeEnum({
-  ADMIN: { value: 'admin' }, // index is auto-assigned
-  EDITOR: { value: 'editor', index: 10 }, 
-  VIEWER: { value: 'viewer' } // index is auto-assigned incrementally
-} as const);
+  ADMIN: { value: 'admin', index: 0 },
+  EDITOR: { value: 'editor', index: 1 },
+  VIEWER: { value: 'viewer', index: 2 }
+} as const, "Role");
 
-// Type-safe
-const role: RoleEnum = RoleEnum.EDITOR;
+// Type-safe with nominal typing
+type RoleType = SafeEnum<"Role">;
+const role: RoleType = Role.EDITOR;
 
 // Runtime validation
-const parsed = RoleEnum.fromValue('editor');
+const parsed = Role.fromValue('editor');
 if (parsed) {
   console.log(`Parsed role is: ${parsed.key}`);
 }
 
 // Reverse lookup
-console.log(RoleEnum.fromKey('VIEWER')?.value); // 'viewer'
+console.log(Role.fromKey('VIEWER')?.value); // 'viewer'
 
 // Iteration
-for (const role of RoleEnum.values()) {
+for (const role of Role.values()) {
   console.log(role.value); // 'admin', 'editor', ...
 }
 
 // Safety everywhere
-function canEdit(role: RoleEnum): boolean {
-  return role.isEqual([RoleEnum.ADMIN, RoleEnum.EDITOR]);
+function canEdit(role: RoleType): boolean {
+  // Instance method isEqual returns true if role equals ANY of the values in the array
+  return role.isEqual([Role.ADMIN, Role.EDITOR]);
 }
 ```
 ## Requirements
@@ -175,7 +177,7 @@ This library provides two main concepts:
 
 ### Key Types
 
-- `SafeEnum`: Interface for a single enum value (contains `key`, `value`, `index`)
+- `SafeEnum<TypeName>`: Interface for a single enum value with nominal typing (contains `key`, `value`, `index`, and `__typeName`)
 - `typeof Enum`: Type of the enum object (contains all values and utility methods)
 
 ## Quick Start Guide
@@ -186,13 +188,13 @@ This library provides two main concepts:
 import { CreateSafeEnumFromArray, SafeEnum } from 'type-safe-enum';
 
 // Create an enum from an array of strings
-const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const);
+const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const, "Status");
 
-// Type for enum values
-type Status = SafeEnum;
+// Type for enum values with nominal typing
+type StatusType = SafeEnum<"Status">;
 
 // Usage
-const currentStatus: Status = Status.PENDING;
+const currentStatus: StatusType = Status.PENDING;
 console.log(currentStatus.value);  // 'Pending'
 console.log(currentStatus.index);  // 0 (auto-assigned)
 
@@ -207,15 +209,15 @@ if (Status.hasValue("Pending")) {
 }
 
 // Type-safe usage in functions
-function processStatus(status: Status) {
-  if (status.isEqual(Status.PENDING)) {
-    return 'Processing...';
+function processStatus(status: StatusType): string {
+  if (status.isEqual(Status.APPROVED)) {
+    return 'Approved!';
   }
-  return 'Done!';
+  return 'Not approved!';
 }
 
 // Type usage in your code
-function checkAccess(role: Status): boolean {
+function checkAccess(role: StatusType): boolean {
   return role.isEqual(Status.APPROVED);
 }
 ```
@@ -230,18 +232,18 @@ const UserRole = CreateSafeEnum({
   ADMIN: { value: 'admin', index: 10 },    // Explicit index
   EDITOR: { value: 'editor', index: 13 },  // Explicit index
   VIEWER: { value: 'viewer' },             // Auto-assigns next index (14)
-} as const);
+} as const, "UserRole");
 
-type UserRole = SafeEnum;
+type UserRoleType = SafeEnum<"UserRole">;
 
 // Usage examples
-const admin: UserRole = UserRole.ADMIN;
+const admin: UserRoleType = UserRole.ADMIN;
 console.log(admin.key);     // 'ADMIN'
 console.log(admin.value);   // 'admin'
 console.log(admin.index);   // 10
 
 // Type-safe usage in functions
-function greet(userRole: UserRole) {
+function greet(userRole: UserRoleType): string {
   if (userRole.isEqual(UserRole.ADMIN)) {
     return 'Hello Admin!';
   }
@@ -272,24 +274,24 @@ const Status = CreateSafeEnum({
   PENDING: { value: 'pending' },
   PROCESSING: { value: 'processing' },
   COMPLETED: { value: 'completed' }
-} as const);
+} as const, "Status");
 
-type Status = SafeEnum;
+type StatusType = SafeEnum<"Status">;
 
 // Mixed explicit and auto indexes
 const Priority = CreateSafeEnum({
   LOW: { value: 'low'},               // auto: 0
   MEDIUM: { value: 'medium', index: 10 },  
   HIGH: { value: 'high' }             // auto: 11
-} as const);
+} as const, "Priority");
 
-type Priority = SafeEnum;
+type PriorityType = SafeEnum<"Priority">;
 
 // Example usage
-const status: Status = Status.PENDING;
+const status: StatusType = Status.PENDING;
 console.log(status.index);  // 0
 
-const priority: Priority = Priority.MEDIUM;
+const priority: PriorityType = Priority.MEDIUM;
 console.log(priority.index); // 10
 ```
 
@@ -307,12 +309,12 @@ const StatusCode = CreateSafeEnum({
   UNAUTHORIZED: { value: 'unauthorized', index: 401 },
   NOT_FOUND: { value: 'not_found', index: 404 },
   SERVER_ERROR: { value: 'server_error', index: 500 },
-} as const);
+} as const, "StatusCode");
 
-type StatusCode = SafeEnum;
+type StatusCodeType = SafeEnum<"StatusCode">;
 
 // Type-safe status code handling
-function handleResponse(statusCode: number) {
+function handleResponse(statusCode: number): string {
   const status = StatusCode.fromIndex(statusCode);
   if (!status) return 'Unknown status';
   
@@ -325,7 +327,7 @@ function handleResponse(statusCode: number) {
 }
 
 // Example usage
-const responseCode: StatusCode = StatusCode.OK;
+const responseCode: StatusCodeType = StatusCode.OK;
 console.log(handleResponse(200)); // 'Success!'
 console.log(handleResponse(401)); // 'Please log in'
 ```
@@ -341,12 +343,12 @@ const FormState = CreateSafeEnum({
   SUBMITTING: { value: 'submitting' }, // auto-indexed 11
   SUCCESS: { value: 'success', index: 20 },
   ERROR: { value: 'error' }, // auto-indexed 21
-} as const);
+} as const, "FormState");
 
-type FormState = SafeEnum;
+type FormStateType = SafeEnum<"FormState">;
 
 function FormComponent() {
-  const [state, setState] = useState<FormState>(FormState.IDLE);
+  const [state, setState] = useState<FormStateType>(FormState.IDLE);
   
   // Example usage in event handlers
   const handleSubmit = async () => {
@@ -377,11 +379,11 @@ function FormComponent() {
 
 ## API Reference
 
-### `CreateSafeEnum(enumMap)`: `SafeEnum<T>`
+### `CreateSafeEnum(enumMap)`: `SafeEnum<TypeName>`
 
 Creates a type-safe enum from an object mapping.
 
-### `CreateSafeEnumFromArray(values)`: `SafeEnum<T>`
+### `CreateSafeEnumFromArray(values)`: `SafeEnum<TypeName>`
 
 Creates a type-safe enum from an array of string literals.
 
@@ -389,14 +391,14 @@ Creates a type-safe enum from an array of string literals.
 
 | Method                                                                                                                                                     | Description                                      | Example                                                       |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------|
-| `fromValue(value: string): SafeEnumValue<T> \| undefined`                                                                                                   | Get enum value by value                          | `UserRole.fromValue('admin')`                                 |
-| `fromKey(key: string): SafeEnumValue<T> \| undefined`                                                                                                       | Get enum value by key                            | `UserRole.fromKey('ADMIN')`                                   |
-| `fromIndex(index: number): SafeEnumValue<T> \| undefined`                                                                                                  | Get enum value by index                          | `UserRole.fromIndex(0)`                                       |
+| `fromValue(value: string): SafeEnum<TypeName> | undefined`                                                                                                | Get enum value by string value                   | `UserRole.fromValue('admin')`                                 |
+| `fromKey(key: string): SafeEnum<TypeName> | undefined`                                                                                                  | Get enum value by key                            | `UserRole.fromKey('ADMIN')`                                   |
+| `fromIndex(index: number): SafeEnum<TypeName> | undefined`                                                                                                  | Get enum value by index                          | `UserRole.fromIndex(0)`                                       |
 | `hasValue(value: string): boolean`                                                                                                                          | Check if value exists                            | `UserRole.hasValue('admin')`                                  |
 | `hasKey(key: string): boolean`                                                                                                                              | Check if key exists                              | `UserRole.hasKey('ADMIN')`                                    |
 | `hasIndex(index: number): boolean`                                                                                                                          | Check if index exists                            | `UserRole.hasIndex(0)`                                        |
-| `isEnumValue(value: unknown): value is SafeEnumValue<T>`                                                                                                    | Type guard for enum values                       | `if (UserRole.isEnumValue(value)) { ... }`                    |
-| <div align="left">`isEqual(`<br>&nbsp;&nbsp;&nbsp;&nbsp;`value: SafeEnumValue<T> \| `<br>&nbsp;&nbsp;&nbsp;&nbsp;`SafeEnumValue<T>[]`<br>): boolean`</div> | Compare enum values                       | `UserRole.isEqual([UserRole.ADMIN, UserRole.EDITOR]): boolean` |
+| `isEqual(values: [SafeEnum<TypeName>, ...SafeEnum<TypeName>[]]): boolean`                                                                                       | Static method: Check if ALL enum values are equal | `if (UserRole.isEqual([role1, role2])) { ... }`               |
+| <div align="left">`isEqual(`<br>&nbsp;&nbsp;&nbsp;&nbsp;`value: SafeEnum<TypeName> | `<br>&nbsp;&nbsp;&nbsp;&nbsp;`SafeEnum<TypeName>[]`<br>): boolean`</div> | Instance method: Check if enum value equals ANY in array | `role.isEqual([UserRole.ADMIN, UserRole.EDITOR]): boolean` |
 | `getValues(): string[]`                                                                                                                                     | Get all enum values as strings                   | `UserRole.getValues()`                                        |
 | `getIndexes(): number[]`                                                                                                                                    | Get all enum indices as numbers                  | `UserRole.getIndexes()`                                       |
 | `getEntries(): [string, SafeEnumValue<T>][]`                                                                                                                | Get all [key, value] pairs                       | `UserRole.getEntries()`                                       |
@@ -418,6 +420,7 @@ Creates a type-safe enum from an array of string literals.
 MIT © Elfre Valdes
 
 ## Acknowledgments
+- Jarom Loveridge (Helped improve type definitions)
 - David Jones
 - Scott Thorsen
 - Charles Hugo

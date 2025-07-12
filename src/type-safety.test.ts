@@ -1,5 +1,5 @@
 import { describe, it, expect, expectTypeOf } from 'vitest';
-import { HttpProtocol } from './types/interfaces/http-protocol';
+import { HttpProtocol, HttpProtocolType } from './types/interfaces/http-protocol';
 import type { SafeEnum } from './types/interfaces/safe-enum';
 
 describe('HttpProtocol Type Safety Tests', () => {
@@ -14,8 +14,8 @@ describe('HttpProtocol Type Safety Tests', () => {
       expect(postMethod.value).toBe('POST');
       
       // Test types
-      expectTypeOf(getMethod).toMatchTypeOf<SafeEnum>();
-      expectTypeOf(postMethod).toMatchTypeOf<SafeEnum>();
+      expectTypeOf(getMethod).toMatchTypeOf<HttpProtocolType>();
+      expectTypeOf(postMethod).toMatchTypeOf<HttpProtocolType>();
     });
 
     it('should not allow access to non-existent properties', () => {
@@ -50,8 +50,8 @@ describe('HttpProtocol Type Safety Tests', () => {
   });
   describe('Enum Methods', () => {
     it('should correctly type fromValue method', () => {
-      const fromValue: SafeEnum = HttpProtocol.GET;
-      expectTypeOf(fromValue).toEqualTypeOf<SafeEnum>();
+      const fromValue: HttpProtocolType = HttpProtocol.GET;
+      expectTypeOf(fromValue).toEqualTypeOf<HttpProtocolType>();
       
       expect(fromValue.value).toBe('GET');
       expectTypeOf(fromValue.value).toBeString();
@@ -66,7 +66,7 @@ describe('HttpProtocol Type Safety Tests', () => {
 
   describe('Type Compatibility', () => {
     it('should be compatible with SafeEnum type', () => {
-      function acceptSafeEnum(value: SafeEnum): string {
+      function acceptSafeEnum(value: HttpProtocolType): string {
         return value.value;
       }
       
@@ -120,7 +120,7 @@ describe('HttpProtocol Type Safety Tests', () => {
       expect(config.method.value).toBe('PUT');
       
       // Verify the type is SafeEnum, not SafeEnum | undefined
-      expectTypeOf(config.method).toMatchTypeOf<SafeEnum>();
+      expectTypeOf(config.method).toMatchTypeOf<HttpProtocolType>();
     });
 
     it('should have correct indices', () => {

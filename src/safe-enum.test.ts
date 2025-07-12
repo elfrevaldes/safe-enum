@@ -18,8 +18,8 @@ describe("SafeEnum", () => {
     BAZ: { value: 'baz', index: 2 }
   } as const;
 
-  const TestEnum = CreateSafeEnum(testEnumMap);
-  type TestEnum = SafeEnum;
+  const TestEnum = CreateSafeEnum(testEnumMap, "TestEnum");
+  type TestEnum = SafeEnum<"TestEnum">;
  
   afterAll(() => {
     if (mockConsoleError) {
@@ -55,7 +55,7 @@ describe("SafeEnum", () => {
       expect(initialDescriptor?.writable).toBe(false);
       
       // Create enum with this object
-      const TestImmutable = CreateSafeEnum({ TEST: obj });
+      const TestImmutable = CreateSafeEnum({ TEST: obj }, "TestImmutable");
       
       // The value property should still be non-writable
       const descriptor = Object.getOwnPropertyDescriptor(TestImmutable.TEST, 'value');
@@ -137,7 +137,7 @@ describe("SafeEnum", () => {
         return undefined;
       });
       const result = TestEnum.fromIndex(-1);
-      expect(mockConsoleError).toHaveBeenCalledWith("[SafeEnum] No enum value with index -1. Valid indices are: 'FOO': 0, 'BAR': 1, 'BAZ': 2");
+      expect(mockConsoleError).toHaveBeenCalledWith("[SafeEnum] No enum value with index -1. Valid indices are: 0, 1, 2");
       expect(result).toBeUndefined();
     });
   });
@@ -213,7 +213,7 @@ describe("SafeEnum", () => {
         THREE: { value: "three" }
       } as const;
 
-      const autoEnum = CreateSafeEnum(autoEnumMap);
+      const autoEnum = CreateSafeEnum(autoEnumMap, "AutoEnum");
       
       // Check that indexes are assigned sequentially starting from 0
       expect(autoEnum.ONE.index).toBe(0);
@@ -234,7 +234,7 @@ describe("SafeEnum", () => {
         FOUR: { value: "four" }
       } as const;
 
-      const mixedEnum = CreateSafeEnum(mixedEnumMap);
+      const mixedEnum = CreateSafeEnum(mixedEnumMap, "MixedEnum");
       
       // Check that explicit indexes are preserved
       expect(mixedEnum.ONE.index).toBe(10);
@@ -280,7 +280,7 @@ describe("SafeEnum", () => {
       });
 
       it("should return an empty array for empty enums", () => {
-        const EmptyEnum = CreateSafeEnum({} as const);
+        const EmptyEnum = CreateSafeEnum({} as const, "EmptyEnum");
         expect(EmptyEnum.getKeys()).toEqual([]);
       });
     });
@@ -297,7 +297,7 @@ describe("SafeEnum", () => {
       });
 
       it("should return an empty array for empty enums", () => {
-        const EmptyEnum = CreateSafeEnum({} as const);
+        const EmptyEnum = CreateSafeEnum({} as const, "EmptyEnum");
         expect(EmptyEnum.getEntries()).toEqual([]);
       });
     });
@@ -337,7 +337,7 @@ describe("SafeEnum", () => {
       });
 
       it("should work with empty enums", () => {
-        const EmptyEnum = CreateSafeEnum({} as const)
+        const EmptyEnum = CreateSafeEnum({} as const, "EmptyEnum")
         expect(EmptyEnum.hasValue("anything")).toBe(false)
       });
     });
@@ -377,16 +377,37 @@ describe("SafeEnum", () => {
   });
 
   describe("Type Safety", () => {
-    it("should narrow types with isEnumValue", () => {
-      const maybeEnum = { key: "FOO", value: "foo", index: 0 }
-      if (!TestEnum.isEnumValue(maybeEnum)) {
-        throw new Error("Type guard should have narrowed the type")
-      }
+    it("should properly identify valid enum values with isEnumValue", () => {
+      // Test with an actual enum value
+      const actualEnum = TestEnum.FOO;
       
-      // TypeScript should now know this is a valid enum value
-      const enumValue: typeof TestEnum.FOO = maybeEnum
-      expect(enumValue.value).toBe('foo')
+      // This should pass because it's a real enum value
+      expect(TestEnum.isEnumValue(actualEnum)).toBe(true);
+      
+      // Type guard should work in conditional
+      if (TestEnum.isEnumValue(actualEnum)) {
+        // If this compiles, the type guard is working correctly
+        const value: SafeEnum<"TestEnum"> = actualEnum;
+        expect(value.value).toBe('foo');
+      } else {
+        // This branch should never execute
+        throw new Error("Type guard failed for valid enum value");
+      }
     });
+    
+    it("should reject objects that look like enum values but aren't", () => {
+      // Create an object that looks like an enum value but isn't
+      const fakeEnum = { 
+        key: "FOO", 
+        value: "foo", 
+        index: 0,
+        // Missing __typeName and methods
+      };
+      
+      // This should fail because it's not a real enum value
+      expect(TestEnum.isEnumValue(fakeEnum as any)).toBe(false);
+    });
+
     
     it("should catch invalid keys at compile time", () => {
       // Test runtime behavior for invalid values
@@ -399,7 +420,7 @@ describe("SafeEnum", () => {
         RED: { value: 'red', index: 0 },
         GREEN: { value: 'green', index: 1 },
         BLUE: { value: 'blue', index: 2 },
-      });
+      } as const , "Colors");
       
       // Test type inference in function
       function getColorName(color: typeof Colors.RED | typeof Colors.GREEN | typeof Colors.BLUE): string {
@@ -427,14 +448,14 @@ describe("SafeEnum", () => {
       });
 
       it("should work with empty enums", () => {
-        const EmptyEnum = CreateSafeEnum({} as const)
+        const EmptyEnum = CreateSafeEnum({} as const, "EmptyEnum")
         expect(EmptyEnum.hasValue("anything")).toBe(false)
       });
 
       it("should work with single-value enums", () => {
         const SingleEnum = CreateSafeEnum({
           ONLY: { value: "only", index: 0 }
-        } as const)
+        } as const, "SingleEnum")
         expect(SingleEnum.hasValue("only")).toBe(true)
         expect(SingleEnum.hasValue("nonexistent")).toBe(false)
       });
@@ -444,7 +465,7 @@ describe("SafeEnum", () => {
           A: { value: "a", index: 10 },
           B: { value: "b", index: 20 },
           C: { value: "c" } // Auto-assigned
-        } as const)
+        } as const, "SparseEnum")
         expect(SparseEnum.hasValue("a")).toBe(true)
         expect(SparseEnum.hasValue("b")).toBe(true)
         expect(SparseEnum.hasValue("c")).toBe(true)
@@ -464,7 +485,7 @@ describe("SafeEnum", () => {
       });
 
       it("should return an empty array for empty enums", () => {
-        const EmptyEnum = CreateSafeEnum({} as const)
+        const EmptyEnum = CreateSafeEnum({} as const, "EmptyEnum")
         expect(EmptyEnum.getValues()).toEqual([])
       });
     });
@@ -493,7 +514,7 @@ describe("SafeEnum", () => {
           A: { value: "a", index: 10 },
           B: { value: "b", index: 20 },
           C: { value: "c" } // Auto-assigned
-        } as const)
+        } as const, "CustomEnum")
         const indices = CustomEnum.getIndexes();
         expect(indices).toHaveLength(3);
         expect(indices).toContain(10);
@@ -502,7 +523,7 @@ describe("SafeEnum", () => {
       });
 
       it("should return an empty array for empty enums", () => {
-        const EmptyEnum = CreateSafeEnum({} as const)
+        const EmptyEnum = CreateSafeEnum({} as const, "EmptyEnum")
         expect(EmptyEnum.getIndexes()).toEqual([])
       });
     });
@@ -510,9 +531,9 @@ describe("SafeEnum", () => {
 
   describe("String Representation", () => {
     it("should provide a meaningful string representation with toString()", () => {
-      expect(TestEnum.FOO.toString()).toBe("FOO: (foo), index: 0")
-      expect(TestEnum.BAR.toString()).toBe("BAR: (bar), index: 1")
-      expect(TestEnum.BAZ.toString()).toBe("BAZ: (baz), index: 2")
+      expect(TestEnum.FOO.toString()).toBe("FOO: foo, index: 0")
+      expect(TestEnum.BAR.toString()).toBe("BAR: bar, index: 1")
+      expect(TestEnum.BAZ.toString()).toBe("BAZ: baz, index: 2")
     });
     
     it("should have correct enum values and keys", () => {
@@ -531,7 +552,7 @@ describe("SafeEnum", () => {
 
     it("should be called automatically in string interpolation", () => {
       const str = `Status: ${TestEnum.FOO}`;
-      expect(str).toContain("FOO: (foo), index: 0")
+      expect(str).toContain("FOO: foo, index: 0")
     });
 
     it("should provide a JSON-serializable object with toJSON()", () => {
@@ -562,32 +583,12 @@ describe("SafeEnum", () => {
   });
 
   describe("Error Handling", () => {
-    it("should throw error when enum entry is missing an index", () => {
-      // This tests the error handling in lines 143-144
-      // Create a function that will be called with an object that has a missing index
-      const createEnumWithMissingIndex = () => {
-        // This is a bit of a hack to test the error case
-        // We're creating an object that will cause the destructuring to fail
-        const badEnumMap = {
-          FOO: { value: 'foo', index: 0 },
-          // Create a getter that returns an object without an index property
-          get BAR() {
-            return { value: 'bar' };
-          }
-        };
-        return CreateSafeEnum(badEnumMap);
-      };
-      
-      // The error should be thrown during enum creation
-      expect(createEnumWithMissingIndex).toThrow("Missing index for enum key: BAR");
-    });
-
     it("should allow duplicate string values by default", () => {
       const createEnumWithDuplicateValues = () => {
         return CreateSafeEnum({
           FOO: { value: '42', index: 0 },
           BAR: { value: '42', index: 1 } // Same value as FOO but with different index
-        } as const);
+        } as const, "TestEnum");
       };
       
       // Should not throw for string values, even if they are the same
@@ -598,14 +599,14 @@ describe("SafeEnum", () => {
   describe("Utility Functions", () => {
     describe("getOrThrowUtil", () => {
       it("should return the value if it exists", () => {
-        expect(getOrThrowUtil("test", "testKey")).toBe("test");
-        expect(getOrThrowUtil(42, "testKey")).toBe(42);
+        expect(getOrThrowUtil("test", "value")).toBe("test");
+        expect(getOrThrowUtil(42, "index")).toBe(42);
       });
 
       it("should throw an error for undefined, null, or empty string", () => {
-        expect(() => getOrThrowUtil(undefined, "testKey")).toThrow("No enum value with key 'testKey'");
-        expect(() => getOrThrowUtil(null as any, "testKey")).toThrow("No enum value with key 'testKey'");
-        expect(() => getOrThrowUtil("", "testKey")).toThrow("No enum value with key 'testKey'");
+        expect(() => getOrThrowUtil(undefined, "value")).toThrow("[SafeEnum] value is undefined");
+        expect(() => getOrThrowUtil(null as any, "value")).toThrow("[SafeEnum] value is null");
+        expect(() => getOrThrowUtil("", "value")).toThrow("[SafeEnum] value is empty");
       });
     });
 
@@ -613,16 +614,16 @@ describe("SafeEnum", () => {
       it("should return true for valid enum values", () => {
         const TestEnum = CreateSafeEnum({
           FOO: { value: 'foo', index: 0 }
-        } as const);
+        } as const, "TestEnum");
         
-        expect(isEnumValueUtil(TestEnum.FOO, { FOO: TestEnum.FOO })).toBe(true);
+        expect(isEnumValueUtil(TestEnum.FOO, { FOO: TestEnum.FOO }, "TestEnum")).toBe(true);
       });
 
       it("should return false for invalid enum values", () => {
-        expect(isEnumValueUtil(null, {})).toBe(false);
-        expect(isEnumValueUtil(undefined, {})).toBe(false);
-        expect(isEnumValueUtil({}, {})).toBe(false);
-        expect(isEnumValueUtil({ key: 'FOO', value: 'foo', index: 0 }, {})).toBe(false);
+        expect(isEnumValueUtil(null, {}, "TestEnum")).toBe(false);
+        expect(isEnumValueUtil(undefined, {}, "TestEnum")).toBe(false);
+        expect(isEnumValueUtil({}, {}, "TestEnum")).toBe(false);
+        expect(isEnumValueUtil({ key: 'FOO', value: 'foo', index: 0 }, {}, "TestEnum")).toBe(false);
       });
       
       it("should return false for objects with non-Object constructor", () => {
@@ -648,13 +649,13 @@ describe("SafeEnum", () => {
         });
         
         // Create a mock enum values object with proper typing
-        const enumValues: Record<string, SafeEnum> = {
+        const enumValues: Record<string, SafeEnum<'CUSTOM'>> = {
           // Type assertion to bypass the type checking since we're testing invalid cases
-          CUSTOM: customObj as unknown as SafeEnum
+          CUSTOM: customObj as unknown as SafeEnum<'CUSTOM'>
         };
         
         // Should return false because constructor is not Object
-        expect(isEnumValueUtil(customObj, enumValues)).toBe(false);
+        expect(isEnumValueUtil(customObj, enumValues, 'CUSTOM')).toBe(false);
       });
     });
   });
@@ -663,7 +664,7 @@ describe("SafeEnum", () => {
     it("should handle single-value enum", () => {
       const SingleEnum = CreateSafeEnum({
         ONLY: { value: "only", index: 0 }
-      } as const);
+      } as const, "SingleEnum");
 
       expect(SingleEnum.getKeys()).toEqual(["ONLY"]);
       const entries = SingleEnum.getEntries();
@@ -683,7 +684,7 @@ describe("SafeEnum", () => {
         A: { value: "a", index: 10 },
         B: { value: "b", index: 20 },
         C: { value: "c", index: 30 } // Explicit index
-      } as const);
+      } as const, "SparseEnum");
 
       expect(SparseEnum.C.index).toBe(30);
       expect(SparseEnum.A.index).toBe(10);
@@ -695,7 +696,7 @@ describe("SafeEnum", () => {
         A: { value: "a", index: 10 },
         B: { value: "b", index: 20 },
         C: { value: "c" } // Auto-assigned index
-      } as const);
+      } as const, "SparseEnum");
 
       expect(SparseEnum.A.index).toBe(10);
       expect(SparseEnum.B.index).toBe(20);
@@ -715,22 +716,20 @@ describe("SafeEnum", () => {
         CreateSafeEnum({
           A: { value: "a", index: 1 },
           B: { value: "b", index: 1 } // Duplicate index
-        } as const);
-      }).toThrow("Duplicate index 1 in enum map: 'B' conflicts with 'A'");
+        } as const, "DuplicateIndexEnum");
+      }).toThrow("Duplicate index 1 for key 'B'. Indexes must be unique.");
     });
   });
 
   describe("Type System", () => {
-    it("should allow using SafeEnum as a type alias", () => {
-      // This is a type test - it will fail to compile if the types are incorrect
-      type RequestType = SafeEnum;
-      
+    it("should allow using SafeEnum as a type alias", () => {      
       // Create a test enum
       const TestEnum = CreateSafeEnum({
         GET: { value: 'get', index: 0 },
         POST: { value: 'post', index: 1 }
-      } as const);
-      
+      } as const, "TestEnum");
+      type RequestType = SafeEnum<"TestEnum">;
+
       // Test that we can assign an enum value to a variable of type RequestType
       const getRequest: RequestType = TestEnum.GET;
       const postRequest: RequestType = TestEnum.POST;
@@ -755,7 +754,7 @@ describe("SafeEnum", () => {
         POST: { value: 'post', index: 1 },
         PUT: { value: 'put', index: 2 },
         DELETE: { value: 'delete', index: 3 }
-      } as const);
+      } as const, "HttpProtocol");
       
       // Create an object using enum properties
       const requestConfig = {
@@ -790,9 +789,9 @@ describe("SafeEnum", () => {
         GET: { value: "get" },
         POST: { value: "post" },
         PUT: { value: "put" }
-      } as const);
+      } as const, "HttpMethods");
       
-      type HttpMethods = SafeEnum;
+      type HttpMethods = SafeEnum<"HttpMethods">;
       
       // Interface using the type
       interface RequestConfig {

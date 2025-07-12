@@ -1,5 +1,4 @@
 import type { SafeEnum, SafeEnumObject } from "./types/interfaces/safe-enum"
-
 /**
  * Creates a user-friendly error message for missing enum values.
  * 
@@ -44,56 +43,69 @@ export function createErrorMessage(
   return `[SafeEnum] ${typeMap[type]}`;
 }
 
-export function isEnumValueUtil(val: unknown, enumValues: Record<string, SafeEnum>): val is SafeEnum {
+export function isEnumValueUtil<Type extends string = string>(
+  val: unknown, 
+  enumValues: Record<string, SafeEnum<Type>>,
+  typeName: Type
+): val is SafeEnum<Type> {
   // Check for null/undefined or non-object values
   if (!val || typeof val !== 'object') return false;
   
-  // Check if the constructor is Object (for plain objects) or a specific type
-  // This helps filter out objects that just happen to have the same shape
-  if (val.constructor !== Object) {
+  // Check for required properties
+  const obj = val as any;
+  if (typeof obj.value !== 'string' || typeof obj.key !== 'string' || typeof obj.index !== 'number') {
     return false;
   }
   
-  const v = val as Record<string, unknown>;
-  
-  // Check for required properties and their types
-  if (typeof v.key !== 'string' || 
-      typeof v.value !== 'string' || 
-      typeof v.index !== 'number' ||
-      !('getValueOrThrow' in v) ||
-      !('getKeyOrThrow' in v) ||
-      !('getIndexOrThrow' in v) ||
-      !('isEqual' in v) ||
-      !('toJSON' in v)) {
+  // Check for required methods
+  if (typeof obj.hasValue !== 'function' || typeof obj.hasKey !== 'function' || typeof obj.hasIndex !== 'function') {
     return false;
   }
   
-  // Check if the key exists in the enum values
-  const key = v.key as string;
-  if (!(key in enumValues)) {
+  // Check for type tag
+  if (obj.__typeName !== typeName) {
     return false;
   }
   
-  // Strict equality check with the stored enum value
-  return enumValues[key] === val;
+  // Check if the value exists in the enum
+  for (const enumValue of Object.values(enumValues)) {
+    if (enumValue.key === obj.key && enumValue.value === obj.value && enumValue.index === obj.index) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
-export function getOrThrowUtil(val: string | number | undefined, keyName:string): string | number {
-  if (val === undefined || val === null || val === '') {
-    throw new Error(`No enum value with key '${keyName}'`);
+export function getOrThrowUtil(val: string | number | undefined, keyName: 'value' | 'key' | 'index'): string | number {
+  if (val === undefined) {
+    throw new Error(`[SafeEnum] ${keyName} is undefined`);
+  }
+  if (val === null) {
+    throw new Error(`[SafeEnum] ${keyName} is null`);
+  }
+  if (typeof val === 'string' && val === '') {
+    throw new Error(`[SafeEnum] ${keyName} is empty`);
   }
   return val;
 }
 
-export function fullCompareUtil(item: SafeEnum, first: SafeEnum) {
-  return item && 
-        typeof item === 'object' &&
-        'value' in item &&
-        'key' in item &&
-        'index' in item &&
-        item.value === first.value &&
-        item.key === first.key &&
-        item.index === first.index
+export function fullCompareUtil<Type extends string = string>(
+  item: SafeEnum<Type>, 
+  first: SafeEnum<Type>
+): boolean {
+  if (!item || !first) {
+    return false;
+  }
+  // Type tag check
+  if (item.__typeName !== first.__typeName) {
+    return false;
+  }
+  
+  // Value comparison
+  return item.key === first.key && 
+         item.value === first.value && 
+         item.index === first.index;
 }
 
 /**
@@ -108,7 +120,7 @@ export function fullCompareUtil(item: SafeEnum, first: SafeEnum) {
  * 
  * @example
  * ```typescript
- * const enumValue = createEnumValue('PENDING', 'pending', 0);
+ * const enumValue = createEnumValue('PENDING', 'pending', 0, {}, 'Status');
  * enumValue.getValueOrThrow();  // 'pending'
  * enumValue.getIndexOrThrow();  // 0
  * enumValue.isEqual(otherValue); // boolean
@@ -118,126 +130,93 @@ export function fullCompareUtil(item: SafeEnum, first: SafeEnum) {
  * @param value - The string value of the enum (e.g., 'pending')
  * @param index - The numeric index (0-based)
  * @param enumValues - The enum values object to use for lookups
+ * @param typeName - The type name for nominal typing
  * @returns A frozen SafeEnum object with all required methods
  * 
  * @throws {Error} If key is empty, value is empty, or index is negative
  */
-export function createEnumValue(key: string, value: string, index: number, enumValues: Record<string, SafeEnum>): SafeEnum {
-  // Validate input parameters - messages must match test expectations
-  if (value === '') {
-    throw new Error(`Enum value cannot be an empty string for key: ${key}`);
-  }
-  if (index < 0) {
-    throw new Error(`Enum index cannot be less than zero for key: ${key}`);
-  }
-  if (!key) {
-    throw new Error(`Enum key cannot be an empty string for value: ${value}`);
-  }
-
-  // Define the base enum value with all required methods
+export function createEnumValue<Type extends string = string>(
+  key: string, 
+  value: string, 
+  index: number, 
+  enumValues: Record<string, SafeEnum<Type>>,
+  typeName: Type
+): SafeEnum<Type> {
+  // Validate inputs
+  if (!key) throw new Error('[SafeEnum] Key cannot be empty');
+  if (!value) throw new Error('[SafeEnum] Value cannot be empty');
+  if (index < 0) throw new Error('[SafeEnum] Index cannot be negative');
+  
+  // Create the enum value object with all required methods
   const enumValue = {
-  key,
-  value,
-  index,
-  
-  // Instance methods - operate on the current enum value only
-  hasValue: (val: string) => value === val,
-  hasKey: (k: string) => key === k,
-  hasIndex: (idx: number) => index === idx,
-  
-  // Type guard - checks if a value is a valid enum value
-  isEnumValue: (val: unknown): val is SafeEnum => isEnumValueUtil(val, enumValues),
-  
-  /**
-   * Performs a strict equality check between this enum value and one or more other values.
-   * 
-   * @remarks
-   * For two enum values to be considered equal, all of the following must be true:
-   * - They must be from the same enum type
-   * - Their keys must be identical (case-sensitive)
-   * - Their values must be identical (case-sensitive for strings)
-   * - Their indexes must be identical
-   * 
-   * @param other - A single enum value or array of enum values to compare against
-   * @returns `true` if any of the provided values exactly matches this enum value
-   * 
-   * @example
-   * ```typescript
-   * const Status = CreateSafeEnum({
-   *   PENDING: { value: 'pending', index: 0 },
-   *   APPROVED: { value: 'approved', index: 1 }
-   * } as const);
-   * 
-   * // Compare with a single value
-   * Status.PENDING.isEqual(Status.PENDING);  // true
-   * Status.PENDING.isEqual(Status.APPROVED); // false
-   * 
-   * // Compare with multiple values (returns true if ANY match)
-   * Status.PENDING.isEqual([
-   *   Status.APPROVED,
-   *   Status.PENDING  // This match will make it return true
-   * ]); // true
-   * 
-   * // Different values with same string representation are not equal
-   * const OtherStatus = CreateSafeEnum({
-   *   PENDING: { value: 'pending', index: 99 } // Different index
-   * });
-   * Status.PENDING.isEqual(OtherStatus.PENDING); // false
-   * ```
-   */
-  isEqual: function(this: SafeEnum, other: SafeEnum | SafeEnum[]): boolean {
-    if (!other) return false;
-    const others = Array.isArray(other) ? other : [other];
-    return others.some((item) => fullCompareUtil(item, this));
-  },
-  
-  // String representation
-  toString(): string {
-    return `${key}: (${value}), index: ${index}`;
-  },
-  
-  // JSON serialization
-  toJSON() {
-    return {
-      key,
-      value,
-      index
-    };
-  },
-  
-  // Getters with validation - these are instance methods that return the value
-  getKeyOrThrow(): string {
-    return getOrThrowUtil(key, 'key') as string;
-  },
+    // Core properties
+    key,
+    value,
+    index,
+    __typeName: typeName,
     
-  getValueOrThrow(): string {
-    return getOrThrowUtil(value, 'value') as string;
-  },
+    // Type checking methods
+    hasValue(val: string): boolean {
+      return this.value === val;
+    },
     
-  getIndexOrThrow(): number {
-    return getOrThrowUtil(index, 'index') as number;
-  },
+    hasKey(k: string): boolean {
+      return this.key === k;
+    },
     
-  // Iterator support
-  [Symbol.iterator]: function* () {
-    for (const val of Object.values(enumValues)) {
-      yield val;
+    hasIndex(idx: number): boolean {
+      return this.index === idx;
+    },
+    
+    isEnumValue(val: unknown): val is SafeEnum<Type> {
+      return isEnumValueUtil(val, enumValues, typeName);
+    },
+    
+    // Comparison methods
+    isEqual(other: SafeEnum<Type> | SafeEnum<Type>[]): boolean {
+      if (Array.isArray(other)) {
+        return other.some(item => fullCompareUtil(item, this));
+      }
+      return fullCompareUtil(other, this);
+    },
+    
+    // String representation methods
+    toString(): string {
+      return `${this.key}: ${this.value}, index: ${this.index}`;
+    },
+    
+    toJSON(): { key: string; value: string; index: number } {
+      return {
+        key: this.key,
+        value: this.value,
+        index: this.index
+      };
+    },
+    
+    /*
+    * Get the key of the enum value or throw if undefined
+    */
+    getKeyOrThrow(): string {
+      return getOrThrowUtil(this.key, 'key') as string;
+    },
+    
+    /*
+    * Get the value of the enum value or throw if undefined
+    */
+    getValueOrThrow(): string {
+      return getOrThrowUtil(this.value, 'value') as string;
+    },
+    
+    /*
+    * Get the index of the enum value or throw if undefined
+    */
+    getIndexOrThrow(): number {
+      return getOrThrowUtil(this.index, 'index') as number;
     }
-  },
-    
-  // Collection methods
-  getKeys: () => Object.keys(enumValues),
-  getValues: () => Object.values(enumValues).map(e => e.value),
-  getIndexes: () => Object.values(enumValues).map(e => e.index).filter((i): i is number => i !== undefined),
-  getEntries: () => Object.entries(enumValues) as [string, SafeEnum][],
-  };
-
-  // Create the final enum value with all methods and make it immutable
-  const safeEnumValue: SafeEnum = Object.freeze({
-    ...enumValue
-  });
-
-  return safeEnumValue;
+  } as SafeEnum<Type>;
+  
+  // Freeze the object to make it immutable
+  return Object.freeze(enumValue);
 }
 
 /**
@@ -245,34 +224,36 @@ export function createEnumValue(key: string, value: string, index: number, enumV
  * 
  * @example
  * ```typescript
- * // Basic usage with explicit indexes
+ * // Basic usage with explicit indexes and type name
  * const Status = CreateSafeEnum({
  *   PENDING: { value: 'pending', index: 0 },
  *   APPROVED: { value: 'approved', index: 1 },
  *   REJECTED: { value: 'rejected', index: 2 }
- * } as const);
+ * } as const, 'Status');
  *
  * // Auto-indexing when index is omitted
  * const Colors = CreateSafeEnum({
  *   RED: { value: 'red' },      // index: 0
  *   GREEN: { value: 'green' },  // index: 1
  *   BLUE: { value: 'blue' }     // index: 2
- * } as const);
+ * } as const, 'Colors');
  *
  * // Type-safe usage
- * const status: SafeEnum = Status.PENDING;
+ * const status: SafeEnum<typeof Status, 'Status'> = Status.PENDING;
  * status.getValueOrThrow();  // 'pending'
  * status.getIndexOrThrow();  // 0
  * ```
  *
  * @param enumMap - The enum map defining the enum values with optional indexes
+ * @param typeName - The type name for nominal typing
  * @returns A type-safe enum object with both enum values and static methods
  * 
  * @throws {Error} If there are duplicate keys, values (for non-strings), or indexes
  */
-export function CreateSafeEnum<T extends Record<string, { value: string; index?: number }>>(
-  enumMap: T
-): SafeEnumObject & { [K in keyof T]: SafeEnum } {
+export function CreateSafeEnum<Type extends string = string>(
+  enumMap: Record<string, { value: string; index?: number }>,
+  typeName: Type
+): SafeEnumObject<Type> & { [K in keyof typeof enumMap]: SafeEnum<Type> } {
   // Ensure values are immutable and collect used indexes
   const usedIndexes = new Set<number>()
   let nextIndex = 0
@@ -298,291 +279,178 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
       for (const seenValue of valueMap.values()) {
         if (typeof seenValue.value === typeof obj.value && 
             seenValue.value === obj.value) {
-          throw new Error(
-            `Duplicate value '${obj.value}' in enum map: ` +
-            `'${key}' conflicts with '${seenValue.key}'`
-          );
+          throw new Error(`Duplicate value '${obj.value}' for keys '${seenValue.key}' and '${key}'. Values must be unique.`);
         }
       }
     }
     
-    // Store the value for future checks (allowing string values to be overwritten)
-    valueMap.set(key, { value: obj.value, key });
+    // Store the value for duplicate checking
+    valueMap.set(key, {value: obj.value, key});
     
     // Check for duplicate indexes
     if (obj.index !== undefined) {
-      if (indexToKey.has(obj.index)) {
-        throw new Error(
-          `Duplicate index ${obj.index} in enum map: ` +
-          `'${key}' conflicts with '${indexToKey.get(obj.index)}'`
-        );
+      if (usedIndexes.has(obj.index)) {
+        throw new Error(`Duplicate index ${obj.index} for key '${key}'. Indexes must be unique.`);
       }
-      indexToKey.set(obj.index, key);
       usedIndexes.add(obj.index);
-      // Update nextIndex to be the max of current nextIndex and (index + 1)
+      indexToKey.set(obj.index, key);
+      
+      // Update nextIndex to be one more than the highest explicit index
       nextIndex = Math.max(nextIndex, obj.index + 1);
     }
   }
-
-  // Second pass: process all enum values
-  for (const [, obj] of Object.entries(enumMap)) {
-    // Ensure value is immutable
-    if (!Object.getOwnPropertyDescriptor(obj, "value")?.writable) {
-      Object.defineProperty(obj, "value", {
-        value: obj.value,
-        writable: false,
-        configurable: false,
-        enumerable: true
-      });
-    }
-
-    // Handle index assignment if not provided
+  
+  // Second pass: assign auto-indexes for entries without explicit indexes
+  for (const [key, obj] of Object.entries(enumMap)) {
     if (obj.index === undefined) {
-      // Find the next available index starting from nextIndex
+      // Find the next available index
       while (usedIndexes.has(nextIndex)) {
         nextIndex++;
       }
-      Object.defineProperty(obj, "index", {
-        value: nextIndex,
-        writable: false,
-        configurable: false,
-        enumerable: true
-      });
+      
+      // Assign the index
+      (obj as any).index = nextIndex;
       usedIndexes.add(nextIndex);
-      nextIndex++; // Move to next available index for next auto-assignment
-    } else {
-      // Make index immutable (duplicate check already done in first pass)
-      Object.defineProperty(obj, "index", {
-        value: obj.index,
-        writable: false,
-        configurable: false,
-        enumerable: true
-      });
+      indexToKey.set(nextIndex, key);
+      nextIndex++;
     }
   }
-
-  // Create maps for fast lookups
-  const valueToEntry = new Map<string, SafeEnum>();
-  const indexToEntry = new Map<number, SafeEnum>();
-  const keyToEntry = new Map<string, SafeEnum>();
-  const enumValues: Record<string, SafeEnum> = {};
-
-  // First pass: validate all entries have an index
-  for (const [key, entry] of Object.entries(enumMap)) {
-    if (entry.index === undefined) {
-      throw new Error(`Missing index for enum key: ${key}`);
-    }
-  }
-
-  // Second pass: create all enum values
-  for (const [key, { value, index }] of Object.entries(enumMap)) {
-    // We've already validated that index is defined in the first pass
-    if (index === undefined) {
-      throw new Error(`Index is undefined for enum key: ${key}`);
-    }
-    
-    const enumValue = createEnumValue(key, value, index, enumValues);
-    
-    // Store for fast lookups
-    valueToEntry.set(value, enumValue);
-    indexToEntry.set(index, enumValue);
-    keyToEntry.set(key, enumValue);
-    enumValues[key] = enumValue;
-  }
-
-  /**
-   * Create the enum object that will be returned.
-   * This object has two types of properties:
-   * 1. Enum values as properties (e.g., Status.PENDING, Status.APPROVED)
-   * 2. Static methods that operate on the entire enum (e.g., Status.fromValue())
-   * 
-   * These static methods are available on the enum object itself and can be used to
-   * look up enum values  by different criteria.
-   */
-  // Create a base object with all the enum values
-  const enumObject = Object.fromEntries(
-    Object.entries(enumValues).map(([key, value]) => [key, value])
-  ) as { [K in keyof T]: SafeEnum };
-
-  // Add static methods to the enum object
-  Object.assign(enumObject, {
-    // Factory methods - these are static methods that search the entire enum
-    fromIndex: (index: number): SafeEnum | undefined => {
-      const result = indexToEntry.get(index);
-      if (!result) {
-        console.error(createErrorMessage('index', index, keyToEntry, valueToEntry, indexToEntry));
-      }
-      return result;
-    },
-    
-    fromValue: (value: string): SafeEnum | undefined => {
-      const result = valueToEntry.get(value);
-      if (!result) {
-        console.error(createErrorMessage('value', value, keyToEntry, valueToEntry, indexToEntry));
-      }
-      return result;
-    },
-    
-    fromKey: (key: string): SafeEnum | undefined => {
-      const result = keyToEntry.get(key);
-      if (!result) {
-        console.error(createErrorMessage('key', key, keyToEntry, valueToEntry, indexToEntry));
-      }
-      return result;
-    },
-    
-    // Static methods that check the entire enum
-    hasValue: (val: string): boolean => valueToEntry.has(val),
-    hasKey: (k: string): boolean => k in enumValues,
-    hasIndex: (idx: number): boolean => indexToEntry.has(idx),
-    
-    // Type guard - checks if a value is a valid enum value from this enum
-    isEnumValue: (val: unknown): val is SafeEnum => {
-      if (!val || typeof val !== 'object') return false;
-      const v = val as Record<string, unknown>;
-      return (
-        typeof v.key === 'string' &&
-        typeof v.value === 'string' &&
-        typeof v.index === 'number' &&
-        Object.prototype.hasOwnProperty.call(v, 'key') &&
-        Object.prototype.hasOwnProperty.call(v, 'value') &&
-        Object.prototype.hasOwnProperty.call(v, 'index') &&
-        v.key in enumValues
-      );
-    },
-    
-    // Static method - checks if all values are equal to each other
-    // Can be called with: isEqual([a, b, c]) where a, b, c are enum values
-    isEqual: (values: (SafeEnum | SafeEnum[])[]): boolean => {
-      try {
-        // Flatten the input array if it's an array of arrays
-        const flatValues = Array.isArray(values[0]) 
-          ? (values[0] as SafeEnum[])
-          : (values as SafeEnum[]);
-        
-        if (flatValues.length === 0) return false;
-        
-        // Check if all values are valid enum values by checking for the presence of required methods
-        // and that they are functions
-        const isValidSafeEnum = (item: any): boolean => {
-          return item && 
-                 typeof item === 'object' &&
-                 typeof item.getValueOrThrow === 'function' &&
-                 typeof item.getKeyOrThrow === 'function' &&
-                 typeof item.getIndexOrThrow === 'function';
-        };
-        
-        // Check if any value is not a valid SafeEnum
-        if (!flatValues.every(isValidSafeEnum)) {
-          return false;
-        }
-        
-        // Now we can safely call the methods
-        const first = flatValues[0];
-        const firstValue = first.getValueOrThrow();
-        const firstKey = first.getKeyOrThrow();
-        const firstIndex = first.getIndexOrThrow();
-        
-        // Compare all values to the first one
-        return flatValues.every(item => {
-          try {
-            return item.getValueOrThrow() === firstValue &&
-                   item.getKeyOrThrow() === firstKey &&
-                   item.getIndexOrThrow() === firstIndex;
-          } catch (e) {
-            return false;
-          }
-        });
-      } catch (e) {
-        return false;
-      }
-    },
-    
-    // Collection methods - return information about all enum values
-    getKeys: () => Object.keys(enumValues),
-    getValues: () => Object.values(enumValues).map(e => e.value),
-    getIndexes: () => Object.values(enumValues).map(e => e.index).filter((i): i is number => i !== undefined),
-    getEntries: () => Object.entries(enumValues) as [string, SafeEnum][],
-    
-    // Make the enum iterable
-    [Symbol.iterator]: function* () {
-      for (const value of Object.values(enumValues)) {
-        yield value;
-      }
-    }
-  });
   
-  // Add remaining static methods to the enum object
-  Object.assign(enumObject, {
-    // Factory methods with safe variants only
-    // Lookup by index
-    fromIndex: (index: number): SafeEnum | undefined => {
-      const result = indexToEntry.get(index)
-      if (!result) {
-        const validIndices = Object.entries(enumMap)
-          .map(([k, v]) => `'${k}': ${v.index}`)
-          .join(', ')
-        console.error(`[SafeEnum] No enum value with index ${index}. Valid indices are: ${validIndices}`)
-      }
-      return result
+  // Create the enum values
+  const enumValues: Record<string, SafeEnum<Type>> = {};
+  for (const [key, obj] of Object.entries(enumMap)) {
+    enumValues[key] = createEnumValue(key, obj.value, obj.index as number, enumValues, typeName);
+  }
+  
+  // Create lookup maps for efficient access
+  const keyToEntry = new Map<string, SafeEnum<Type>>();
+  const valueToEntry = new Map<string, SafeEnum<Type>>();
+  const indexToEntry = new Map<number, SafeEnum<Type>>();
+  
+  for (const entry of Object.values(enumValues)) {
+    keyToEntry.set(entry.key, entry);
+    valueToEntry.set(entry.value, entry);
+    indexToEntry.set(entry.index, entry);
+  }
+  
+  // Create the enum object with static methods
+  const enumObject = {
+    ...enumValues,
+    
+    // Factory methods
+    fromValue(value: string): SafeEnum<Type> | undefined {
+      return valueToEntry.get(value);
     },
-    // Lookup by value (string)
-    fromValue: (value: string): SafeEnum | undefined => {
-      const result = valueToEntry.get(value)
-      if (!result) {
-        const validValues = Object.values(enumMap).map(v => `'${v.value}'`).join(', ')
-        console.error(`[SafeEnum] No enum value with value '${value}'. Valid values are: ${validValues}`)
-      }
-      return result
+    
+    fromKey(key: string): SafeEnum<Type> | undefined {
+      return keyToEntry.get(key);
     },
-    // Lookup by key
-    fromKey: (key: string): SafeEnum | undefined => {
-      const result = keyToEntry.get(key)
-      if (!result) {
-        const validKeys = Object.keys(enumMap).map(k => `'${k}'`).join(', ')
-        console.error(`[SafeEnum] No enum value with key '${key}'. Valid keys are: ${validKeys}`)
+    
+    fromIndex(index: number): SafeEnum<Type> | undefined {
+      if (index < 0) {
+        console.error(`[SafeEnum] No enum value with index ${index}. Valid indices are: ${Object.values(enumValues).map(e => e.index).join(', ')}`);
+        return undefined;
       }
-      return result
+      return indexToEntry.get(index);
     },
-    // Returns true if the enum contains the specified value
-    hasValue: (value: string): boolean => {
+    
+    // Type checking methods
+    hasValue(value: string): boolean {
       return valueToEntry.has(value);
     },
-    // Returns true if the enum contains the specified key
-    hasKey: (key: string): boolean => {
-      return key in enumValues;
+    
+    hasKey(key: string): boolean {
+      return keyToEntry.has(key);
     },
-    // Returns true if the enum contains the specified index
-    hasIndex: (index: number): boolean => {
+    
+    hasIndex(index: number): boolean {
       return indexToEntry.has(index);
     },
-    // Compares enum values for equality
-    isEqual: (other: SafeEnum | SafeEnum[]): boolean => {
-      if (!other) return false;
-      const others = Array.isArray(other) ? other : [other];
-      if (others.length === 0) return false;
-      
-      const first = others[0];
-      if (!first || typeof first !== 'object') return false;
-      
-      return others.every((item) => fullCompareUtil(item, first));
+    
+    isEnumValue(value: unknown): value is SafeEnum<Type> {
+      return isEnumValueUtil(value, enumValues, typeName);
     },
-
-    // Add iterator support to the enum object
-    // This allows using the enum in for...of loops and spread operations
-    [Symbol.iterator]: function* () {
-      for (const value of Object.values(enumValues)) {
-        yield value;
+    
+    // Comparison methods
+    isEqual(other: SafeEnum<Type> | SafeEnum<Type>[]): boolean {
+      if (!other) {
+        return false;
+      }
+      if (Array.isArray(other)) {
+        if (other.length === 0) {
+          return false;
+        }
+        // Get the first item as reference
+        const first = other[0];
+        // Check if all items in array are equal to the first
+        return other.every(item => fullCompareUtil(item, first));
+      }
+      return Object.values(enumValues).some(enumValue => fullCompareUtil(other, enumValue));
+    },
+    
+    // String representation methods
+    toString(): string {
+      const entries = Object.entries(enumValues).map(([key, entry]) => 
+        `${key}: (${entry.value}), index: ${entry.index}`
+      ).join('\n');
+      return `[SafeEnum ${typeName}]\n${entries}`;
+    },
+    
+    toJSON(): { typeName: string; values: Array<{ key: string; value: string; index: number }> } {
+      const entries = Object.values(enumValues).map(entry => entry.toJSON());
+      return {
+        typeName,
+        values: entries
+      };
+    },
+    
+    // Getter methods
+    getKeys(): string[] {
+      return Array.from(keyToEntry.keys());
+    },
+    
+    getValues(): string[] {
+      return Array.from(valueToEntry.keys());
+    },
+    
+    getIndexes(): number[] {
+      return Array.from(indexToEntry.keys());
+    },
+    
+    getEntries(): [string, SafeEnum<Type>][] {
+      return Array.from(keyToEntry.entries());
+    },
+    
+    getKey(): string {
+      // Use the first enum value's key as a fallback
+      const firstKey = Object.keys(enumValues)[0];
+      const firstEnum = enumValues[firstKey];
+      return firstEnum ? firstEnum.key : '';
+    },
+    
+    getValue(): string {
+      // Use the first enum value's value as a fallback
+      const firstKey = Object.keys(enumValues)[0];
+      const firstEnum = enumValues[firstKey];
+      return firstEnum ? firstEnum.value : '';
+    },
+    
+    getIndex(): number {
+      // Use the first enum value's index as a fallback
+      const firstKey = Object.keys(enumValues)[0];
+      const firstEnum = enumValues[firstKey];
+      return firstEnum ? firstEnum.index : 0;
+    },
+    
+    // Iterator support
+    *[Symbol.iterator](): IterableIterator<SafeEnum<Type>> {
+      for (const entry of Object.values(enumValues)) {
+        yield entry;
       }
     }
-  });
-
-  /**
-   * The final enum object that is returned has two types of properties:
-   * 1. Enum values as properties (e.g., Status.PENDING, Status.APPROVED)
-   * 2. Static methods that operate on the entire enum (e.g., Status.fromValue())
-   */
-  return Object.freeze(enumObject) as unknown as { [K in keyof T]: SafeEnum } & SafeEnumObject;
+  } as SafeEnumObject<Type> & { [K in keyof typeof enumMap]: SafeEnum<Type> };
+  
+  return Object.freeze(enumObject);
 }
 
 /**
@@ -592,11 +460,11 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
  * - Key: Uppercased string (e.g., 'pending' -> 'PENDING')
  * - Value: Original string
  * - Index: Position in the array (0-based)
- *
+ * 
  * @example
  * ```typescript
  * // Basic usage
- * const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const);
+ * const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const, "Status");
  * 
  * // Access enum values
  * Status.PENDING.value; // "pending"
@@ -610,33 +478,40 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
  * Array.from(Status); // [Status.PENDING, Status.APPROVED, Status.REJECTED]
  * Status.getKeys(); // ["PENDING", "APPROVED", "REJECTED"]
  * ```
- *
+ * 
  * @param values - Readonly array of string literals to convert to enum values
+ * @param typeName - The type name for nominal typing
  * @returns A type-safe enum object with both enum values and static methods
  * 
  * @throws {Error} If there are duplicate values (case-insensitive)
  */
-export function CreateSafeEnumFromArray<T extends readonly string[]>(
-  values: T
-): SafeEnumObject & { [K in T[number] as Uppercase<K & string>]: SafeEnum } {
-  // keep track of unique values (case-insensitive)
-  const uniqueValues = new Set<string>();
-  // Convert array to object map with { value } - let CreateSafeEnum handle index assignment
-  const enumMap = values.reduce<Record<string, { value: string }>>(
-    (acc, value) => {
-      const upperValue = value.toUpperCase();
-      if (uniqueValues.has(upperValue)) throw new Error(`Duplicate value: ${value}`);
-      
-      uniqueValues.add(upperValue);
-      acc[value.toUpperCase()] = { value };
-      return acc;
-    }, 
-    {}
-  ) as Record<Uppercase<T[number] & string>, { value: T[number] & string }>;
-
-  // Create the enum and cast to the correct type
-  const result = CreateSafeEnum(enumMap);
+export function CreateSafeEnumFromArray<Type extends string = string>(
+  values: readonly string[],
+  typeName: Type
+): SafeEnumObject<Type> & { [K in Uppercase<string>]: SafeEnum<Type> } {
+  // Create an enum map from the array
+  const enumMap: Record<string, { value: string; index: number }> = {};
   
-  // The return type ensures type safety with the input array values
-  return result as unknown as { [K in T[number] as Uppercase<K & string>]: SafeEnum } & SafeEnumObject;
+  // Check for duplicate values (case-insensitive)
+  const lowerCaseValues = new Set<string>();
+  
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
+    const lowerValue = value.toLowerCase();
+    
+    if (lowerCaseValues.has(lowerValue)) {
+      throw new Error(`Duplicate value '${value}' in enum array. Values must be unique (case-insensitive).`);
+    }
+    
+    lowerCaseValues.add(lowerValue);
+    
+    // Generate the key by uppercasing the value
+    const key = value.toUpperCase();
+    
+    // Add to the enum map
+    enumMap[key] = { value, index: i };
+  }
+  
+  // Create the enum using the map
+  return CreateSafeEnum(enumMap as any, typeName) as any;
 }

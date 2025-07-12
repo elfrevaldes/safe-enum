@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-07-11
+
+### Fundamental change to the type declaration of SafeEnum
+We changed the type declaration of SafeEnum to be more type-safe and to better reflect the runtime behavior of the enum. SafeEnum is now a union type of the enum values, and the enum values are now objects with a value, key, and index property. This change allows for better type safety and more flexible usage of the enum values.
+TypeScript can now infer the type of the enum values and the enum keys, and the enum values are now objects with a value, key, and index property. This change allows for better type safety and more flexible usage of the enum values.
+
 ## [1.0.9] - 2025-06-30
 
 ### Fixed

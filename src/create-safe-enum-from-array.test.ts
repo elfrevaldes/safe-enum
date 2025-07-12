@@ -11,11 +11,11 @@ beforeAll(() => {
 describe("CreateSafeEnumFromArray", () => {
   // Test array setup
   const testArray = ['foo', 'bar', 'baz'] as const;
-  let TestEnum = CreateSafeEnumFromArray(testArray);
-  type TestEnum = SafeEnum;
+  let TestEnum = CreateSafeEnumFromArray(testArray, "TestEnum");
+  type TestEnum = SafeEnum<"TestEnum">;
   // Setup before each test
   beforeEach(() => {
-    TestEnum = CreateSafeEnumFromArray(testArray);
+    TestEnum = CreateSafeEnumFromArray(testArray, "TestEnum");
   });
   
   // Basic functionality
@@ -100,21 +100,21 @@ describe("CreateSafeEnumFromArray", () => {
     });
     describe("accessing undefined properties", () => {
       it("Key() should throw an error when accessing undefined properties", () => {
-        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum | undefined;
+        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum<"TestEnum"> | undefined;
         expect(invalidKey).toBeUndefined();
         
         // Test that trying to call Key() on undefined throws
         expect(() => (invalidKey as any).Key()).toThrow(TypeError);
       });
       it("Value() should throw an error when accessing undefined properties", () => {
-        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum | undefined;
+        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum<"TestEnum"> | undefined;
         expect(invalidKey).toBeUndefined();
           
         // Test that trying to call Value() on undefined throws
         expect(() => (invalidKey as any).Value()).toThrow(TypeError);
       });
       it("Index() should throw an error when accessing undefined properties", () => {
-        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum | undefined;
+        const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum<"TestEnum"> | undefined;
         expect(invalidKey).toBeUndefined();
           
         // Test that trying to call Index() on undefined throws
@@ -209,10 +209,10 @@ describe("CreateSafeEnumFromArray", () => {
     });
 
     it("should correctly compare different enums with isEqual", () => {
-      const TestEnum2 = CreateSafeEnumFromArray(['some', 'other', 'values'] as const);
-      expect(TestEnum.FOO.isEqual(TestEnum2.SOME)).toBe(false);
-      expect(TestEnum.FOO.isEqual(TestEnum2.OTHER)).toBe(false);
-      expect(TestEnum.FOO.isEqual(TestEnum2.VALUES)).toBe(false);
+      const TestEnum2 = CreateSafeEnumFromArray(['some', 'other', 'values'] as const, "TestEnum2");
+      expect(TestEnum2.SOME.isEqual(TestEnum2.SOME)).toBe(true);
+      expect(TestEnum2.SOME.isEqual(TestEnum2.OTHER)).toBe(false);
+      expect(TestEnum2.SOME.isEqual(TestEnum2.VALUES)).toBe(false);
     });
 
     it("should work with array of enums in isEqual", () => {
@@ -243,27 +243,27 @@ describe("CreateSafeEnumFromArray", () => {
   describe("Validation", () => {
     it("should throw when array contains empty strings", () => {
       expect(() => {
-        CreateSafeEnumFromArray(['', 'Something', 'Else'] as const);
-      }).toThrow('Enum value cannot be an empty string for key: ');
+        CreateSafeEnumFromArray(['', 'Something', 'Else'] as const, "TestEnum");
+      }).toThrow('[SafeEnum] Key cannot be empty');
     });
 
     it("should throw when array contains duplicate values", () => {
       expect(() => {
-        CreateSafeEnumFromArray(['', '', 'Else'] as const);
-      }).toThrow('Duplicate value: ');
+        CreateSafeEnumFromArray(['', '', 'Else'] as const, "TestEnum");
+      }).toThrow(`Duplicate value '' in enum array. Values must be unique (case-insensitive).`);
     });
 
     it("should throw when array contains duplicate values (case-insensitive)", () => {
       expect(() => {
-        CreateSafeEnumFromArray(['test', 'TEST', 'test2'] as const);
-      }).toThrow('Duplicate value: TEST');
+        CreateSafeEnumFromArray(['test', 'TEST', 'test2'] as const, "TestEnum");
+      }).toThrow(`Duplicate value 'TEST' in enum array. Values must be unique (case-insensitive).`);
     });
   });
 
   describe("Edge Cases", () => {
     it("should handle falsy but valid values correctly", () => {
       // This test verifies that falsy but valid values work correctly
-      const FalsyEnum = CreateSafeEnumFromArray(['0', 'false', ' '] as const);
+      const FalsyEnum = CreateSafeEnumFromArray(['0', 'false', ' '] as const, "FalsyEnum");
       
       // Get all entries to ensure we have the correct order
       const entries = FalsyEnum.getEntries();
@@ -300,7 +300,7 @@ describe("CreateSafeEnumFromArray", () => {
     });
     
     it("should handle empty arrays", () => {
-      const EmptyEnum = CreateSafeEnumFromArray([] as const);
+      const EmptyEnum = CreateSafeEnumFromArray([] as const, "EmptyEnum");
       expect(EmptyEnum.getEntries()).toEqual([]);
       expect(EmptyEnum.getKeys()).toEqual([]);
       expect(EmptyEnum.getValues()).toEqual([]);
@@ -309,7 +309,7 @@ describe("CreateSafeEnumFromArray", () => {
     });
     
     it("should handle arrays with one element", () => {
-      const SingleEnum = CreateSafeEnumFromArray(['test'] as const);
+      const SingleEnum = CreateSafeEnumFromArray(['test'] as const, "SingleEnum");
       expect(SingleEnum.TEST).toBeDefined();
       expect(SingleEnum.TEST.getValueOrThrow()).toBe('test');
       expect(SingleEnum.TEST.getIndexOrThrow()).toBe(0);
@@ -321,29 +321,29 @@ describe("CreateSafeEnumFromArray", () => {
       // Create an enum with duplicate values should throw an error
       // The error message shows the case of the value that triggered the duplicate check
       expect(() => {
-        CreateSafeEnumFromArray(['test', 'test', 'test'] as const);
-      }).toThrow('Duplicate value: test');
+        CreateSafeEnumFromArray(['test', 'test', 'test'] as const, "SingleEnum");
+      }).toThrow(`Duplicate value 'test' in enum array. Values must be unique (case-insensitive).`);
       
       // Verify that case-insensitive duplicates are also caught
       // The error message shows the case of the value that triggered the duplicate check
       expect(() => {
-        CreateSafeEnumFromArray(['first', 'Test', 'test', 'TEST'] as const);
-      }).toThrow('Duplicate value: test');
+        CreateSafeEnumFromArray(['first', 'Test', 'test', 'TEST'] as const, "SingleEnum");
+      }).toThrow(`Duplicate value 'test' in enum array. Values must be unique (case-insensitive).`);
       
       // Verify with different case variations
       expect(() => {
-        CreateSafeEnumFromArray(['FIRST', 'first', 'First'] as const);
-      }).toThrow('Duplicate value: first');
+        CreateSafeEnumFromArray(['FIRST', 'first', 'First'] as const, "SingleEnum");
+      }).toThrow(`Duplicate value 'first' in enum array. Values must be unique (case-insensitive).`);
     });
   });
   
   // Type safety with TypeScript
   describe("TypeScript Integration", () => {
     // Create the enum
-    const Status = CreateSafeEnumFromArray(['pending', 'approved', 'rejected'] as const);
+    const Status = CreateSafeEnumFromArray(['pending', 'approved', 'rejected'] as const, "Status");
     
     // Type alias using SafeEnum
-    type StatusType = SafeEnum;
+    type StatusType = SafeEnum<"Status">;
 
     it("should allow using the SafeEnum type directly in function parameters", () => {
       // This function accepts any Status enum value
@@ -393,7 +393,7 @@ describe("CreateSafeEnumFromArray", () => {
 
     it("should work with const assertions", () => {
       const COLORS = ['red', 'green', 'blue'] as const;
-      const Colors = CreateSafeEnumFromArray(COLORS);
+      const Colors = CreateSafeEnumFromArray(COLORS, "Colors");
       
       expect(Colors.RED.value).toBe('red');
       expect(Colors.GREEN.value).toBe('green');
