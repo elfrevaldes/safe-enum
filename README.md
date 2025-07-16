@@ -43,7 +43,7 @@ A type-safe, flexible enum factory for TypeScript with runtime validation and ty
 
 | Feature            | Native Enum                                        | String Unions                        | Const Objects                                  | type-safe-enum                        |
 | ------------------ | -------------------------------------------------- | ------------------------------------ | ---------------------------------------------- | ------------------------------------- |
-| Type Safety        | <div align="center">✅</div>                        | <div align="center">✅</div>          | <div align="center">⚠️<br>(requires care)</div> | <div align="center">✅✅<br>(nominal typing)</div> |
+| Type Safety        | <div align="center">✅</div>                        | <div align="center">✅</div>          | <div align="center">⚠️<br>(requires care)</div> | <div align="center">✅<br>(nominal typing)</div> |
 | Runtime Safety     | <div align="center">❌</div>                        | <div align="center">❌</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
 | IntelliSense       | <div align="center">✅</div>                        | <div align="center">✅</div>          | <div align="center">✅</div>                    | <div align="center">✅</div>           |
 | Reverse Lookup     | <div align="center">✅<br>(but unsafe)</div>        | <div align="center">❌</div>          | <div align="center">❌</div>                    | <div align="center">✅</div>           |
@@ -62,7 +62,7 @@ enum Role {
   VIEWER = 'viewer'
 }
 /* 
-* You can't easily validate a string
+* Can't easily validate a string
 * Enums are compiled weirdly (numeric fallbacks, bi-directional maps)
 * Serialization/deserialization is clumsy 
 */
@@ -112,84 +112,20 @@ function isValidRole(role: string): role is Role {
 
 ### type-safe-enum
 ```typescript
+import { CreateSafeEnumFromArray, SafeEnum } from 'type-safe-enum';
+
 /*
 * Full runtime validation
-* Safe .fromValue()/.fromKey()
-* Safe .map()/.entries()
+* Safe .fromValue() / .fromKey()
+* Safe .map() / .entries()
 * safeEnum.toJSON() support
 * Tree-shaking
 * Full IntelliSense support
 * Reverse lookups
 * Automatic indexing
 */
-const Role = CreateSafeEnum({
-  ADMIN: { value: 'admin', index: 0 },
-  EDITOR: { value: 'editor', index: 1 },
-  VIEWER: { value: 'viewer', index: 2 }
-} as const, "Role");
-
-// Type-safe with nominal typing
-type RoleType = SafeEnum<"Role">;
-const role: RoleType = Role.EDITOR;
-
-// Runtime validation
-const parsed = Role.fromValue('editor');
-if (parsed) {
-  console.log(`Parsed role is: ${parsed.key}`);
-}
-
-// Reverse lookup
-console.log(Role.fromKey('VIEWER')?.value); // 'viewer'
-
-// Iteration
-for (const role of Role.values()) {
-  console.log(role.value); // 'admin', 'editor', ...
-}
-
-// Safety everywhere
-function canEdit(role: RoleType): boolean {
-  // Instance method isEqual returns true if role equals ANY of the values in the array
-  return role.isEqual([Role.ADMIN, Role.EDITOR]);
-}
-```
-## Requirements
-
-- Node.js >= 16.0.0
-- TypeScript >= 4.9.0
-- npm >= 7.0.0 or yarn >= 1.22.0 or pnpm >= 6.0.0
-
-## Installation
-
-```bash
-npm install type-safe-enum
-# or
-yarn add type-safe-enum
-# or
-pnpm add type-safe-enum
-```
-
-## Type System Overview
-
-This library provides two main concepts:
-
-1. **Enum Object**: The container that holds all enum values and utility methods (e.g., `Status`, `UserRole`)
-2. **Enum Value**: A single value from the enum (e.g., `Status.PENDING`, `UserRole.ADMIN`)
-
-### Key Types
-
-- `SafeEnum<TypeName>`: Interface for a single enum value with nominal typing (contains `key`, `value`, `index`, and `__typeName`)
-- `typeof Enum`: Type of the enum object (contains all values and utility methods)
-
-## Quick Start Guide
-
-### 1. Simple Enum from Array (Recommended)
-
-```typescript
-import { CreateSafeEnumFromArray, SafeEnum } from 'type-safe-enum';
-
-// Create an enum from an array of strings
-const Status = CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const, "Status");
-
+const Status = 
+  CreateSafeEnumFromArray(["Pending", "Approved", "Rejected"] as const, "Status");
 // Type for enum values with nominal typing
 type StatusType = SafeEnum<"Status">;
 
@@ -222,7 +158,37 @@ function checkAccess(role: StatusType): boolean {
 }
 ```
 
-### 2. Enum with Custom Values and Indices
+## Requirements
+
+- Node.js >= 16.0.0
+- TypeScript >= 4.9.0
+- npm >= 7.0.0 or yarn >= 1.22.0 or pnpm >= 6.0.0
+
+## Installation
+
+```bash
+npm install type-safe-enum
+# or
+yarn add type-safe-enum
+# or
+pnpm add type-safe-enum
+```
+
+## Type System Overview
+
+This library provides two main concepts:
+
+1. **Enum Object**: The container that holds all enum values and utility methods (e.g., `Status`, `UserRole`)
+2. **Enum Value**: A single value from the enum (e.g., `Status.PENDING`, `UserRole.ADMIN`)
+
+### Key Types
+
+- `SafeEnum<TypeName>`: Interface for a single enum value with nominal typing (contains `key`, `value`, `index`, and `__typeName`)
+- `typeof Enum`: Type of the enum object (contains all values and utility methods)
+
+## Quick Start Guide
+
+### 1. Enum with Custom Values and Indices
 
 ```typescript
 import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
@@ -235,6 +201,14 @@ const UserRole = CreateSafeEnum({
 } as const, "UserRole");
 
 type UserRoleType = SafeEnum<"UserRole">;
+
+// Mixed explicit and auto indexes
+const Priority = CreateSafeEnum({
+  LOW: { value: 'low'},                   // auto: 0
+  MEDIUM: { value: 'medium', index: 10 },  
+  HIGH: { value: 'high' }                 // auto: 11
+} as const, "Priority");
+type PriorityType = SafeEnum<"Priority">;
 
 // Usage examples
 const admin: UserRoleType = UserRole.ADMIN;
@@ -262,37 +236,6 @@ const allIndexes = UserRole.indexes();  // [10, 13, 14]
 for (const [key, value] of UserRole.entries()) {
   console.log(`${key}: ${value.value} (${value.index})`);
 }
-```
-
-### 3. Advanced: Auto-indexing and Mixed Indexes
-
-```typescript
-import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
-
-// Auto-assigned indexes (0, 1, 2)
-const Status = CreateSafeEnum({
-  PENDING: { value: 'pending' },
-  PROCESSING: { value: 'processing' },
-  COMPLETED: { value: 'completed' }
-} as const, "Status");
-
-type StatusType = SafeEnum<"Status">;
-
-// Mixed explicit and auto indexes
-const Priority = CreateSafeEnum({
-  LOW: { value: 'low'},               // auto: 0
-  MEDIUM: { value: 'medium', index: 10 },  
-  HIGH: { value: 'high' }             // auto: 11
-} as const, "Priority");
-
-type PriorityType = SafeEnum<"Priority">;
-
-// Example usage
-const status: StatusType = Status.PENDING;
-console.log(status.index);  // 0
-
-const priority: PriorityType = Priority.MEDIUM;
-console.log(priority.index); // 10
 ```
 
 ## Real-World Examples
@@ -340,9 +283,9 @@ import { useState } from 'react';
 
 const FormState = CreateSafeEnum({
   IDLE: { value: 'idle', index: 10 },
-  SUBMITTING: { value: 'submitting' }, // auto-indexed 11
+  SUBMITTING: { value: 'submitting' },  // auto-indexed 11
   SUCCESS: { value: 'success', index: 20 },
-  ERROR: { value: 'error' }, // auto-indexed 21
+  ERROR: { value: 'error' },            // auto-indexed 21
 } as const, "FormState");
 
 type FormStateType = SafeEnum<"FormState">;

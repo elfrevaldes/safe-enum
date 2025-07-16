@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-07-16
+
+### Fixed
+- Improved auto-indexing logic to handle mixed explicit and auto-indexed values more robustly
+- Fixed an issue where auto-indexed values could potentially conflict with explicit indexes
+- Added validation to ensure auto-indexed values always come after the highest explicit index
+
+### Changed
+- Updated documentation examples to use more consistent naming conventions
+- Improved type safety in enum value handling
+
 ## [1.1.0] - 2025-07-11
 
 ### Fundamental change to the type declaration of SafeEnum

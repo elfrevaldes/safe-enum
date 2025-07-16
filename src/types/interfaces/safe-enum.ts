@@ -34,17 +34,17 @@ export interface SafeEnumBase {
  * 
  * @example
  * ```typescript
- * const HttpMethods = CreateSafeEnum({
+ * const httpMethods = CreateSafeEnum({
  *   GET: { value: 'GET', index: 0 },
  *   POST: { value: 'POST', index: 1 },
  *   PUT: { value: 'PUT', index: 2 }
- * } as const, 'HttpMethods');
+ * } as const, "HttpMethods");
  * 
  * // Type is 'GET' | 'POST' | 'PUT'
- * type HttpMethod = EnumType<typeof HttpMethods>;
+ * type HttpMethodType = SafeEnum<"HttpMethods">;
  * 
  * // Usage in function parameters
- * function handleRequest(method: EnumType<typeof HttpMethods>) {
+ * function handleRequest(method: HttpMethodType) {
  *   // method is type-safe and can only be 'GET', 'POST', or 'PUT'
  * }
  * ```
@@ -69,89 +69,41 @@ export type EnumType<T> = T extends { value: infer U } ? U : never;
  * ### Basic Usage
  * ```typescript
  * // Create an enum
- * const HttpProtocol = CreateSafeEnum({
+ * const httpProtocol = CreateSafeEnum({
  *   GET: { value: 'GET', index: 0 },
  *   POST: { value: 'POST', index: 1 },
  *   PUT: { value: 'PUT', index: 2 }
- * } as const, 'HttpProtocol');
+ * } as const, "HttpProtocol");
  * 
  * // Type-safe usage
- * const protocol: SafeEnum<'HttpProtocol'> = HttpProtocol.GET;
+ * const protocol: SafeEnum<'HttpProtocol'> = httpProtocol.GET;
  * console.log(protocol.value);  // 'GET'
  * console.log(protocol.index);  // 0
  * console.log(protocol.__typeName);  // 'HttpProtocol'
  * ```
  * 
  * @example
- * ### With Type Alias
- * ```typescript
- * // Create an enum
- * const HttpProtocol = CreateSafeEnum({
- *   GET: { value: 'GET', index: 0 },
- *   POST: { value: 'POST', index: 1 },
- *   PUT: { value: 'PUT', index: 2 }
- * } as const, 'HttpProtocol');
- * 
- * // Create a type alias for better type safety
- * type HttpProtocolType = SafeEnum<'HttpProtocol'>;
- * 
- * // Use the type alias in function parameters
- * function handleRequest(method: HttpProtocolType) {
- *   console.log(method.toString()); // 'GET: GET, index: 0'
- *   console.log(method.hasValue('GET')); // true
- *   console.log(method.hasKey('GET')); // true
- * }
- * ```
- * 
- * @example
- * ### Type Safety
+ * ### Creating with CreateSafeEnumFromArray
  * ```typescript
  * // Type safety prevents mixing different enum types
- * const HttpProtocol = CreateSafeEnum({
- *   GET: { value: 'GET' },
- *   POST: { value: 'POST' }
- * } as const, 'HttpProtocol');
- * 
- * const Roles = CreateSafeEnum({
- *   ADMIN: { value: 'admin' },
- *   USER: { value: 'user' }
- * } as const, 'Roles');
+ * const httpProtocol = CreateSafeEnumFromArray(['GET', 'POST', 'PUT'], "HttpProtocol");
  * 
  * // These type aliases provide nominal typing
  * type HttpProtocolType = SafeEnum<'HttpProtocol'>;
- * type RolesType = SafeEnum<'Roles'>;
  * 
- * // This works fine
- * const protocol: HttpProtocolType = HttpProtocol.GET;
- * 
- * // This would be a type error
- * // const badProtocol: HttpProtocolType = Roles.ADMIN; // Error!
  * ```
  * @example
- * ### Using in Functions
- * ```typescript
- * // Create an enum
- * const HttpProtocol = CreateSafeEnum({
- *   GET: { value: 'GET' },
- *   POST: { value: 'POST' }
- * } as const, 'HttpProtocol');
- * 
- * // Use in a function with type safety
- * function fetchData(method: SafeEnum<'HttpProtocol'>, url: string) {
- *   console.log(`Making ${method.value} request to ${url}`);
- * }
- * 
- * // This works
- * fetchData(HttpProtocol.GET, 'https://api.example.com');
+ * // This works fine
+ * const protocol: HttpProtocolType = httpProtocol.GET;
  * 
  * // This would be a type error
- * // fetchData(Roles.ADMIN, 'https://api.example.com'); // Error!
- * ```
+ * // const badProtocol: HttpProtocolType = httpProtocol.ADMIN; // Error!
+ * // This works
+ * fetchData(httpProtocol.GET, 'https://api.example.com');
  * 
  * @see {@link CreateSafeEnum} - Function to create type-safe enums
  * @see {@link CreateSafeEnumFromArray} - Alternative factory for array-based enum creation
  */
-// Interface for enum value instances
 /**
  * Interface for enum value instances with strong nominal typing
  * @template Type - String literal type name for nominal typing
@@ -276,27 +228,28 @@ export interface SafeEnum<Type extends string> extends SafeEnumBase {
  * @example
  * ```typescript
  * // Create an enum
- * const HttpProtocol = CreateSafeEnum({
+ * const httpProtocol = CreateSafeEnum({
  *   GET: { value: 'GET', index: 0 },
  *   POST: { value: 'POST', index: 1 },
  *   PUT: { value: 'PUT', index: 2 }
- * } as const, 'HttpProtocol');
+ * } as const, "HttpProtocol");
  * 
  * // Access enum values
- * const protocol = HttpProtocol.GET;
+ * const protocol = httpProtocol.GET;
  * console.log(protocol.__typeName); // 'HttpProtocol'
  * 
  * // Use static methods
- * const getMethod = HttpProtocol.fromValue('GET');
- * const isValid = HttpProtocol.hasValue('GET');
+ * const getMethod = httpProtocol.fromValue('GET');
+ * const isValid = httpProtocol.hasValue('GET');
  * 
  * // Type-safe comparison
- * if (HttpProtocol.isEqual(someValue)) {
+ * const someValue: SafeEnum<'HttpProtocol'> = httpProtocol.GET;
+ * if (httpProtocol.GET.isEqual(someValue)) {
  *   // someValue is definitely a value from HttpProtocol
  * }
  * 
  * // Iterate over values
- * for (const method of HttpProtocol) {
+ * for (const method of httpProtocol) {
  *   console.log(method.toString());
  * }
  * ```
@@ -318,21 +271,21 @@ export interface SafeEnumObject<Type extends string> {
    * @returns The enum value, or undefined if not found
    */
   fromValue(value: string): SafeEnum<Type> | undefined;
+
   /**
    * Returns the enum value matching the given key, or undefined if not found
    * @param key The key to search for
    * @returns The enum value, or undefined if not found
    */
   fromKey(key: string): SafeEnum<Type> | undefined;
+
   /**
    * Returns the enum value matching the given index, or undefined if not found
    * @param index The index to search for
    * @returns The enum value, or undefined if not found
    */
   fromIndex(index: number): SafeEnum<Type> | undefined;
-  
-  
-  
+
   //#region Type checking
   /**
    * Checks if the enum has a value with the given value
@@ -340,21 +293,21 @@ export interface SafeEnumObject<Type extends string> {
    * @returns true if the enum has a value with the given value, false otherwise
    */
   hasValue(value: string): boolean;
-  
+
   /**
    * Checks if the enum has a value with the given key
    * @param key The key to check
    * @returns true if the enum has a value with the given key, false otherwise
    */
   hasKey(key: string): boolean;
-  
+
   /**
    * Checks if the enum has a value with the given index
    * @param index The index to check
    * @returns true if the enum has a value with the given index, false otherwise
    */
   hasIndex(index: number): boolean;
-  
+
   /**
    * Type guard to check if the given value is an enum value
    * @param value The value to check

@@ -241,8 +241,8 @@ describe("SafeEnum", () => {
       expect(mixedEnum.THREE.index).toBe(20);
       
       // Check that auto-indexed values get the next available index
-      expect(mixedEnum.TWO.index).toBe(21);
-      expect(mixedEnum.FOUR.index).toBe(22);
+      expect(mixedEnum.TWO.index).toBe(11);
+      expect(mixedEnum.FOUR.index).toBe(21);
       
       // Test instance usage pattern
       const instance1 = mixedEnum.fromKey("ONE");
@@ -719,6 +719,48 @@ describe("SafeEnum", () => {
         } as const, "DuplicateIndexEnum");
       }).toThrow("Duplicate index 1 for key 'B'. Indexes must be unique.");
     });
+
+    it("should throw when auto-assigned index conflicts with explicit index", () => {
+      const conflictingEnumMap = {
+        ONE: { value: "one", index: 10 },
+        TWO: { value: "two" },  // This would try to get index 11
+        THREE: { value: "three", index: 11 },  // But this explicitly takes 11
+        FOUR: { value: "four" }  // This would then get 12
+      } as const;
+
+      // The test expects this to throw because TWO would try to get index 11
+      // but THREE explicitly takes index 11
+      expect(() => CreateSafeEnum(conflictingEnumMap, "ConflictingEnum")).toThrow(
+        /Duplicate index 11 for key 'THREE'/
+      );
+    });
+
+    it("should handle mixed explicit and auto indexes", () => {
+      const mixedEnumMap = {
+        ONE: { value: "one", index: 10 },
+        TWO: { value: "two" },
+        THREE: { value: "three", index: 20 },
+        FOUR: { value: "four" }
+      } as const;
+
+      const mixedEnum = CreateSafeEnum(mixedEnumMap, "MixedEnum");
+      
+      // Check that explicit indexes are preserved
+      expect(mixedEnum.ONE.index).toBe(10);
+      expect(mixedEnum.THREE.index).toBe(20);
+      
+      // Check that auto-indexed values get the next available index
+      expect(mixedEnum.TWO.index).toBe(11);
+      expect(mixedEnum.FOUR.index).toBe(21);
+      
+      // Test instance usage pattern
+      const instance1 = mixedEnum.fromKey("ONE");
+      const instance2 = mixedEnum.fromValue("two");
+      expect(instance1).toBeDefined();
+      expect(instance2).toBeDefined();
+      expect(instance1?.value).toBe("one");
+      expect(instance2?.value).toBe("two");
+    })
   });
 
   describe("Type System", () => {

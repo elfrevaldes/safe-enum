@@ -297,18 +297,13 @@ export function CreateSafeEnum<Type extends string = string>(
       
       // Update nextIndex to be one more than the highest explicit index
       nextIndex = Math.max(nextIndex, obj.index + 1);
-    }
-  }
-  
-  // Second pass: assign auto-indexes for entries without explicit indexes
-  for (const [key, obj] of Object.entries(enumMap)) {
-    if (obj.index === undefined) {
-      // Find the next available index
+    } else {
+      // Auto-assign index for entries without explicit index
       while (usedIndexes.has(nextIndex)) {
         nextIndex++;
       }
       
-      // Assign the index
+      // Assign the auto-index
       (obj as any).index = nextIndex;
       usedIndexes.add(nextIndex);
       indexToKey.set(nextIndex, key);
@@ -423,22 +418,19 @@ export function CreateSafeEnum<Type extends string = string>(
     
     getKey(): string {
       // Use the first enum value's key as a fallback
-      const firstKey = Object.keys(enumValues)[0];
-      const firstEnum = enumValues[firstKey];
+      const firstEnum = enumValues[Object.keys(enumValues)[0]];
       return firstEnum ? firstEnum.key : '';
     },
     
     getValue(): string {
       // Use the first enum value's value as a fallback
-      const firstKey = Object.keys(enumValues)[0];
-      const firstEnum = enumValues[firstKey];
+      const firstEnum = enumValues[Object.keys(enumValues)[0]];
       return firstEnum ? firstEnum.value : '';
     },
     
     getIndex(): number {
       // Use the first enum value's index as a fallback
-      const firstKey = Object.keys(enumValues)[0];
-      const firstEnum = enumValues[firstKey];
+      const firstEnum = enumValues[Object.keys(enumValues)[0]];
       return firstEnum ? firstEnum.index : 0;
     },
     
