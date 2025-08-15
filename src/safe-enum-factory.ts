@@ -253,7 +253,7 @@ export function createEnumValue<Type extends string = string>(
 export function CreateSafeEnum<T extends Record<string, { value: string; index?: number }>, Type extends string = string>(
   enumMap: T,
   typeName: Type
-): SafeEnumObject<Type> & { [K in keyof T]: SafeEnum<Type> } {
+): { [K in keyof T]: SafeEnum<Type> } & SafeEnumObject<Type> {
   // Ensure values are immutable and collect used indexes
   const usedIndexes = new Set<number>()
   let nextIndex = 0
@@ -480,7 +480,7 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
 export function CreateSafeEnumFromArray<V extends readonly string[], Type extends string = string>(
   values: V,
   typeName: Type
-): SafeEnumObject<Type> & { [K in Uppercase<V[number]>]: SafeEnum<Type> } {
+): { [K in Uppercase<V[number]>]: SafeEnum<Type> } & SafeEnumObject<Type> {
   // Create an enum map from the array
   const enumMap: Record<string, { value: string; index: number }> = {};
   
