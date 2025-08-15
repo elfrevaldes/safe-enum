@@ -1,4 +1,9 @@
 /**
+ * Utility type to ensure literal type preservation for CreateSafeEnumFromArray
+ */
+export type LiteralArray<T extends readonly string[]> = T;
+
+/**
  * Base interface for enum values used in CreateSafeEnum.
  * This interface defines the minimum required properties for enum values.
  * 

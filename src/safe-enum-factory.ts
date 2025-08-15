@@ -250,7 +250,10 @@ export function createEnumValue<Type extends string = string>(
  * 
  * @throws {Error} If there are duplicate keys, values (for non-strings), or indexes
  */
-export function CreateSafeEnum<T extends Record<string, { value: string; index?: number }>, Type extends string = string>(
+export function CreateSafeEnum<
+  const T extends Record<string, { value: string; index?: number }>, 
+  Type extends string = string
+>(
   enumMap: T,
   typeName: Type
 ): { [K in keyof T]: SafeEnum<Type> } & SafeEnumObject<Type> {
@@ -455,8 +458,8 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
  * 
  * @example
  * ```typescript
- * // Basic usage
- * const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"] as const, "Status");
+ * // Basic usage - literal types are automatically inferred
+ * const Status = CreateSafeEnumFromArray(["pending", "approved", "rejected"], "Status");
  * 
  * // Access enum values
  * Status.PENDING.value; // "pending"
@@ -471,16 +474,19 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
  * Status.getKeys(); // ["PENDING", "APPROVED", "REJECTED"]
  * ```
  * 
- * @param values - Readonly array of string literals to convert to enum values
+ * @param values - Array of string literals to convert to enum values (literal types automatically inferred)
  * @param typeName - The type name for nominal typing
  * @returns A SafeEnumObject with all enum values and static methods
  * 
  * @throws {Error} If there are duplicate values (case-insensitive)
  */
-export function CreateSafeEnumFromArray<V extends readonly string[], Type extends string = string>(
+export function CreateSafeEnumFromArray<
+  const V extends readonly string[], 
+  Type extends string = string
+>(
   values: V,
   typeName: Type
-): { [K in Uppercase<V[number]>]: SafeEnum<Type> } & SafeEnumObject<Type> {
+): { readonly [K in Uppercase<V[number]>]: SafeEnum<Type> } & SafeEnumObject<Type> {
   // Create an enum map from the array
   const enumMap: Record<string, { value: string; index: number }> = {};
   

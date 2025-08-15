@@ -1,6 +1,6 @@
 {
   "name": "type-safe-enum",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A type-safe, flexible enum factory for TypeScript with runtime validation and type inference",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

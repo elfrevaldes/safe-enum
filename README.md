@@ -192,9 +192,9 @@ The library is designed to work seamlessly across module boundaries in monorepos
 
 ```typescript
 // ✅ Works in cross-module scenarios
-import { CreateSafeEnumFromArray, type SafeEnumObject, type SafeEnum } from "type-safe-enum"
+import { CreateSafeEnumFromArray, type SafeEnum } from "type-safe-enum"
 
-export const envList: SafeEnumObject<"EnvType"> = CreateSafeEnumFromArray(
+export const envList = CreateSafeEnumFromArray(
   ["development", "test", "testing", "production"],
   "EnvType"
 )
@@ -206,10 +206,10 @@ export type EnvType = SafeEnum<"EnvType">
 ### 1. Enum with Custom Values and Indices
 
 ```typescript
-import { CreateSafeEnum } from 'type-safe-enum';
+import { CreateSafeEnum, type SafeEnumObject } from 'type-safe-enum';
 import type { SafeEnum } from 'type-safe-enum';
 // Create an enum with custom values and indices
-const UserRole = CreateSafeEnum({
+const UserRole: SafeEnumObject<"UserRole"> = CreateSafeEnum({
   ADMIN: { value: 'admin', index: 10 },    // Explicit index
   EDITOR: { value: 'editor', index: 13 },  // Explicit index
   VIEWER: { value: 'viewer' },             // Auto-assigns next index (14)
@@ -222,7 +222,7 @@ const Priority = CreateSafeEnum({
   LOW: { value: 'low'},                   // auto: 0
   MEDIUM: { value: 'medium', index: 10 },  
   HIGH: { value: 'high' }                 // auto: 11
-} as const, "Priority");
+}, "Priority");
 type PriorityType = SafeEnum<"Priority">;
 
 // Usage examples

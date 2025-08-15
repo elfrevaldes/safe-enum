@@ -12,10 +12,12 @@ describe("CreateSafeEnumFromArray", () => {
   // Test array setup
   const testArray = ['foo', 'bar', 'baz'] as const;
   let TestEnum = CreateSafeEnumFromArray(testArray, "TestEnum");
+
   // Setup before each test
   beforeEach(() => {
     TestEnum = CreateSafeEnumFromArray(testArray, "TestEnum");
   });
+
   
   // Basic functionality
   describe("Basic Functionality", () => {

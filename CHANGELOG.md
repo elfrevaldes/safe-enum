@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-08-15
+
+### Fixed
+- **Enhanced Type Inference**: Added `const` modifier to generic type parameters in both `CreateSafeEnum` and `CreateSafeEnumFromArray`
+- **Improved IntelliSense**: Users no longer need to add `as const` to get proper autocomplete and type validation
+- **Better Developer Experience**: Literal types are now automatically preserved across module boundaries
+
+### Technical Details
+- Modified function signatures to use `const T` and `const V` generic constraints
+- Eliminates the need for manual `as const` assertions while maintaining backward compatibility
+- Fixed TypeScript configuration to exclude test files from build output
+- Improved iterator compatibility for broader TypeScript target support
+
 ## [1.2.0] - 2025-08-15
 
 ### Improved
