@@ -12,7 +12,6 @@ describe("CreateSafeEnumFromArray", () => {
   // Test array setup
   const testArray = ['foo', 'bar', 'baz'] as const;
   let TestEnum = CreateSafeEnumFromArray(testArray, "TestEnum");
-  type TestEnum = SafeEnum<"TestEnum">;
   // Setup before each test
   beforeEach(() => {
     TestEnum = CreateSafeEnumFromArray(testArray, "TestEnum");
@@ -106,7 +105,7 @@ describe("CreateSafeEnumFromArray", () => {
         // Test that trying to call Key() on undefined throws
         expect(() => (invalidKey as any).Key()).toThrow(TypeError);
       });
-      it("Value() should throw an error when accessing undefined properties", () => {
+      it("Value() should throw an error when accessiqng undefined properties", () => {
         const invalidKey = (TestEnum as any).INVALIDKEY as SafeEnum<"TestEnum"> | undefined;
         expect(invalidKey).toBeUndefined();
           

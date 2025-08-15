@@ -112,7 +112,7 @@ function isValidRole(role: string): role is Role {
 
 ### type-safe-enum
 ```typescript
-import { CreateSafeEnumFromArray, SafeEnum } from 'type-safe-enum';
+import { CreateSafeEnumFromArray, type SafeEnum } from 'type-safe-enum';
 
 /*
 * Full runtime validation
@@ -184,15 +184,30 @@ This library provides two main concepts:
 ### Key Types
 
 - `SafeEnum<TypeName>`: Interface for a single enum value with nominal typing (contains `key`, `value`, `index`, and `__typeName`)
-- `typeof Enum`: Type of the enum object (contains all values and utility methods)
+- `SafeEnumObject<TypeName>`: Interface for the enum object (contains all values and utility methods)
+
+### Cross-Module Compatibility
+
+The library is designed to work seamlessly across module boundaries in monorepos and complex TypeScript projects. Both `CreateSafeEnum` and `CreateSafeEnumFromArray` return `SafeEnumObject<TypeName>`, ensuring portable type definitions that avoid TS2742 errors when exporting enums between packages.
+
+```typescript
+// ✅ Works in cross-module scenarios
+import { CreateSafeEnumFromArray, type SafeEnumObject, type SafeEnum } from "type-safe-enum"
+
+export const envList: SafeEnumObject<"EnvType"> = CreateSafeEnumFromArray(
+  ["development", "test", "testing", "production"],
+  "EnvType"
+)
+export type EnvType = SafeEnum<"EnvType">
+```
 
 ## Quick Start Guide
 
 ### 1. Enum with Custom Values and Indices
 
 ```typescript
-import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
-
+import { CreateSafeEnum } from 'type-safe-enum';
+import type { SafeEnum } from 'type-safe-enum';
 // Create an enum with custom values and indices
 const UserRole = CreateSafeEnum({
   ADMIN: { value: 'admin', index: 10 },    // Explicit index
@@ -243,7 +258,7 @@ for (const [key, value] of UserRole.entries()) {
 ### API Response Validation
 
 ```typescript
-import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
+import { CreateSafeEnum, type SafeEnum } from 'type-safe-enum';
 
 const StatusCode = CreateSafeEnum({
   OK: { value: 'ok', index: 200 },
@@ -278,7 +293,7 @@ console.log(handleResponse(401)); // 'Please log in'
 ### Form State Management
 
 ```typescript
-import { CreateSafeEnum, SafeEnum } from 'type-safe-enum';
+import { CreateSafeEnum, type SafeEnum } from 'type-safe-enum';
 import { useState } from 'react';
 
 const FormState = CreateSafeEnum({
@@ -322,11 +337,11 @@ function FormComponent() {
 
 ## API Reference
 
-### `CreateSafeEnum(enumMap)`: `SafeEnum<TypeName>`
+### `CreateSafeEnum(enumMap)`: `SafeEnumObject<TypeName>`
 
 Creates a type-safe enum from an object mapping.
 
-### `CreateSafeEnumFromArray(values)`: `SafeEnum<TypeName>`
+### `CreateSafeEnumFromArray(values)`: `SafeEnumObject<TypeName>`
 
 Creates a type-safe enum from an array of string literals.
 

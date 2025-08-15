@@ -246,14 +246,14 @@ export function createEnumValue<Type extends string = string>(
  *
  * @param enumMap - The enum map defining the enum values with optional indexes
  * @param typeName - The type name for nominal typing
- * @returns A type-safe enum object with both enum values and static methods
+ * @returns A SafeEnumObject with all enum values and static methods
  * 
  * @throws {Error} If there are duplicate keys, values (for non-strings), or indexes
  */
-export function CreateSafeEnum<Type extends string = string>(
-  enumMap: Record<string, { value: string; index?: number }>,
+export function CreateSafeEnum<T extends Record<string, { value: string; index?: number }>, Type extends string = string>(
+  enumMap: T,
   typeName: Type
-): SafeEnumObject<Type> & { [K in keyof typeof enumMap]: SafeEnum<Type> } {
+): SafeEnumObject<Type> & { [K in keyof T]: SafeEnum<Type> } {
   // Ensure values are immutable and collect used indexes
   const usedIndexes = new Set<number>()
   let nextIndex = 0
@@ -473,14 +473,14 @@ export function CreateSafeEnum<Type extends string = string>(
  * 
  * @param values - Readonly array of string literals to convert to enum values
  * @param typeName - The type name for nominal typing
- * @returns A type-safe enum object with both enum values and static methods
+ * @returns A SafeEnumObject with all enum values and static methods
  * 
  * @throws {Error} If there are duplicate values (case-insensitive)
  */
-export function CreateSafeEnumFromArray<Type extends string = string>(
-  values: readonly string[],
+export function CreateSafeEnumFromArray<V extends readonly string[], Type extends string = string>(
+  values: V,
   typeName: Type
-): SafeEnumObject<Type> & { [K in Uppercase<string>]: SafeEnum<Type> } {
+): SafeEnumObject<Type> & { [K in Uppercase<V[number]>]: SafeEnum<Type> } {
   // Create an enum map from the array
   const enumMap: Record<string, { value: string; index: number }> = {};
   
@@ -505,5 +505,5 @@ export function CreateSafeEnumFromArray<Type extends string = string>(
   }
   
   // Create the enum using the map
-  return CreateSafeEnum(enumMap as any, typeName) as any;
+  return CreateSafeEnum(enumMap as any, typeName) as SafeEnumObject<Type> & { [K in Uppercase<V[number]>]: SafeEnum<Type> };
 }

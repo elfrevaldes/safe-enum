@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-08-15
+
+### Improved
+- **Cross-Module Portability**: Fixed TS2742 "inferred type cannot be named" errors when exporting enums across module boundaries in monorepos and complex TypeScript projects
+- **Simplified Return Types**: Both `CreateSafeEnum` and `CreateSafeEnumFromArray` now return `SafeEnumObject<Type>` instead of complex intersection types
+- **Better Type Exports**: `SafeEnumObject` is now exported from the main entry point for explicit type annotations when needed
+
+### Technical Details
+- Eliminated complex inferred intersection types that caused non-portable type references
+- Return types are now explicitly `SafeEnumObject<Type>` for both factory functions
+- Maintains full backward compatibility - existing code works without changes
+- Optional explicit type annotation available for consumers who need it
+
 ## [1.1.1] - 2025-07-16
 
 ### Fixed

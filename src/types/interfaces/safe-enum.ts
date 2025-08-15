@@ -216,7 +216,7 @@ export interface SafeEnum<Type extends string> extends SafeEnumBase {
  * static methods that operate on the enum. It allows for:
  * - Direct access to enum values (e.g., `HttpProtocol.GET`)
  * - Lookup methods (e.g., `HttpProtocol.fromValue('GET')`)
- * - Type checking (e.g., `HttpProtocol.isEnumValue(someValue)`)
+ * - Type checking (e.g., `HttpProtocol.isEnumValue(someValue)`) 
  * - Type-safe comparison (e.g., `HttpProtocol.isEqual(value)`)
  * - Iteration (e.g., `Array.from(HttpProtocol)`)
  * 
@@ -258,11 +258,6 @@ export interface SafeEnum<Type extends string> extends SafeEnumBase {
  * @see {@link CreateSafeEnum} - Function to create type-safe enums
  */
 export interface SafeEnumObject<Type extends string> {
-  /**
-   * Index signature for enum values and static methods.
-   * @internal
-   */
-  [key: string]: SafeEnum<Type> | ((...args: any[]) => any);
   
   // Factory methods
   /**
@@ -416,3 +411,4 @@ export interface SafeEnumObject<Type extends string> {
    */
   [Symbol.iterator](): IterableIterator<SafeEnum<Type>>;
 }
+
