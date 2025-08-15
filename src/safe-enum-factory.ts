@@ -276,7 +276,7 @@ export function CreateSafeEnum<T extends Record<string, { value: string; index?:
     // Check for duplicate values with proper type checking
     // Only throw for non-string duplicates to match test expectations
     if (typeof obj.value !== 'string') {
-      for (const seenValue of valueMap.values()) {
+      for (const seenValue of Array.from(valueMap.values())) {
         if (typeof seenValue.value === typeof obj.value && 
             seenValue.value === obj.value) {
           throw new Error(`Duplicate value '${obj.value}' for keys '${seenValue.key}' and '${key}'. Values must be unique.`);
@@ -505,5 +505,5 @@ export function CreateSafeEnumFromArray<V extends readonly string[], Type extend
   }
   
   // Create the enum using the map
-  return CreateSafeEnum(enumMap as any, typeName) as SafeEnumObject<Type> & { [K in Uppercase<V[number]>]: SafeEnum<Type> };
+  return CreateSafeEnum(enumMap as Record<Uppercase<V[number]>, { value: V[number]; index: number }>, typeName);
 }
