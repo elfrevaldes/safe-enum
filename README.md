@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/type-safe-enum.svg)](https://www.npmjs.com/package/type-safe-enum)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/elfrevaldes/safe-enum/ci.yml)](https://github.com/elfrevaldes/safe-enum/actions)
-[![codecov](https://codecov.io/gh/elfrevaldes/safe-enum/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/elfrevaldes/safe-enum)
+[![codecov](https://codecov.io/gh/elfrevaldes/safe-enum/graph/badge.svg?branch=main)](https://codecov.io/gh/elfrevaldes/safe-enum)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/type-safe-enum)](https://bundlephobia.com/package/type-safe-enum)
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.9%2B-blue.svg)](https://www.typescriptlang.org/)
 
