@@ -163,7 +163,7 @@ export interface SafeEnum<Type extends string> extends SafeEnumBase {
   /**
    * Type guard to check if the given value is an enum value
    * @param value The value to check
-   * @returns true if the value is an enum value, false otherwise
+   * @returns true if the value is an enum Object, false otherwise
    */
   isEnumValue(value: unknown): value is SafeEnum<Type>;
   //#endregion
@@ -311,7 +311,7 @@ export interface SafeEnumObject<Type extends string> {
   /**
    * Type guard to check if the given value is an enum value
    * @param value The value to check
-   * @returns true if the value is an enum value, false otherwise
+   * @returns true if the value is an enum Object, false otherwise
    */
   isEnumValue(value: unknown): value is SafeEnum<Type>;
   //#endregion
@@ -400,6 +400,30 @@ export interface SafeEnumObject<Type extends string> {
    * const statusIndex = Status.PENDING.getIndex(); // 0
    */
   getIndex(): number;
+
+  /**
+   * Returns the key of the enum value (throws if not found)
+   * @example
+   * const statusKey = Status.PENDING.getKeyOrThrow(); // 'PENDING'
+   * @throws {Error} If the enum value is not found
+   */
+  getKeyOrThrow(): string;
+
+  /**
+   * Returns the value of the enum (throws if not found)
+   * @example
+   * const statusValue = Status.PENDING.getValueOrThrow(); // 'pending'
+   * @throws {Error} If the enum value is not found
+   */
+  getValueOrThrow(): string;
+
+  /**
+   * Returns the index of the enum (throws if not found)
+   * @example
+   * const statusIndex = Status.PENDING.getIndexOrThrow(); // 0
+   * @throws {Error} If the enum value is not found
+   */
+  getIndexOrThrow(): number;
   //#endregion
 
   // Iterator support - allows for...of iteration over enum values

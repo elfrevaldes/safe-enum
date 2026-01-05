@@ -1,13 +1,12 @@
 import { describe, it, expect, expectTypeOf } from 'vitest';
-import { HttpProtocol, HttpProtocolType } from './types/interfaces/http-protocol';
-import type { SafeEnum } from './types/interfaces/safe-enum';
+import { HttpProtocolTypes, HttpProtocolType } from './types/interfaces/http-protocol';
 
 describe('HttpProtocol Type Safety Tests', () => {
   describe('Basic Enum Access', () => {
     it('should allow accessing enum values without non-null assertions', () => {
       // Should not require non-null assertion
-      const getMethod = HttpProtocol.GET;
-      const postMethod = HttpProtocol.POST;
+      const getMethod = HttpProtocolTypes.GET;
+      const postMethod = HttpProtocolTypes.POST;
 
       // Test runtime values
       expect(getMethod.value).toBe('GET');
@@ -34,23 +33,23 @@ describe('HttpProtocol Type Safety Tests', () => {
       const validMethod = httpMethods[0];
       
       // This should work fine
-      expect(HttpProtocol[validMethod as keyof typeof HttpProtocol]).toBeDefined();
+      expect(HttpProtocolTypes[validMethod as keyof typeof HttpProtocolTypes]).toBeDefined();
       
       // This would cause a TypeScript error if uncommented:
       // const invalidMethod = 'NON_EXISTENT';
-      // expect(HttpProtocol[invalidMethod as keyof typeof HttpProtocol]).toBeDefined();
+      // expect(HttpProtocolTypes[invalidMethod as keyof typeof HttpProtocolTypes]).toBeDefined();
     });
   });
 
   describe("SafeEnum is defined", () => {
     it("should be defined", () => {
-      let stringGet = HttpProtocol.GET.value;
+      let stringGet = HttpProtocolTypes.GET.value;
       expect(stringGet).toBe('GET');
     });
   });
   describe('Enum Methods', () => {
     it('should correctly type fromValue method', () => {
-      const fromValue: HttpProtocolType = HttpProtocol.GET;
+      const fromValue: HttpProtocolType = HttpProtocolTypes.GET;
       expectTypeOf(fromValue).toEqualTypeOf<HttpProtocolType>();
       
       expect(fromValue.value).toBe('GET');
@@ -59,7 +58,7 @@ describe('HttpProtocol Type Safety Tests', () => {
     });
 
     it('should return undefined for non-existent values', () => {
-      const fromValue = HttpProtocol.fromValue('NON_EXISTENT');
+      const fromValue = HttpProtocolTypes.fromValue('NON_EXISTENT');
       expect(fromValue).toBeUndefined();
     });
   });
@@ -71,14 +70,14 @@ describe('HttpProtocol Type Safety Tests', () => {
       }
       
       // Should accept HttpProtocol values
-      expect(acceptSafeEnum(HttpProtocol.GET)).toBe('GET');
-      expect(acceptSafeEnum(HttpProtocol.POST)).toBe('POST');
+      expect(acceptSafeEnum(HttpProtocolTypes.GET)).toBe('GET');
+      expect(acceptSafeEnum(HttpProtocolTypes.POST)).toBe('POST');
     });
 
     it('should work with object literals', () => {
       const testMethods = {
-        get: HttpProtocol.GET,
-        post: HttpProtocol.POST,
+        get: HttpProtocolTypes.GET,
+        post: HttpProtocolTypes.POST,
       };
 
       // Should not allow non-existent keys
@@ -91,13 +90,13 @@ describe('HttpProtocol Type Safety Tests', () => {
 
   describe('Runtime Behavior', () => {
     it('should have all expected HTTP methods', () => {
-      expect(HttpProtocol.GET.value).toBe('GET');
-      expect(HttpProtocol.POST.value).toBe('POST');
-      expect(HttpProtocol.PUT.value).toBe('PUT');
-      expect(HttpProtocol.DELETE.value).toBe('DELETE');
-      expect(HttpProtocol.PATCH.value).toBe('PATCH');
-      expect(HttpProtocol.OPTIONS.value).toBe('OPTIONS');
-      expect(HttpProtocol.HEAD.value).toBe('HEAD');
+      expect(HttpProtocolTypes.GET.value).toBe('GET');
+      expect(HttpProtocolTypes.POST.value).toBe('POST');
+      expect(HttpProtocolTypes.PUT.value).toBe('PUT');
+      expect(HttpProtocolTypes.DELETE.value).toBe('DELETE');
+      expect(HttpProtocolTypes.PATCH.value).toBe('PATCH');
+      expect(HttpProtocolTypes.OPTIONS.value).toBe('OPTIONS');
+      expect(HttpProtocolTypes.HEAD.value).toBe('HEAD');
     });
 
     it('should allow assigning HttpProtocol.PUT to a config object without non-null assertion', () => {
@@ -110,13 +109,13 @@ describe('HttpProtocol Type Safety Tests', () => {
           description: 'Test description'
         },
         // This is the key test - should NOT require ! or any type assertion
-        method: HttpProtocol.PUT,
+        method: HttpProtocolTypes.PUT,
         skipThrowForStatus: true,
         buildUrl: () => '/test'
       };
 
       // Verify the value was set correctly
-      expect(config.method).toBe(HttpProtocol.PUT);
+      expect(config.method).toBe(HttpProtocolTypes.PUT);
       expect(config.method.value).toBe('PUT');
       
       // Verify the type is SafeEnum, not SafeEnum | undefined
@@ -124,13 +123,13 @@ describe('HttpProtocol Type Safety Tests', () => {
     });
 
     it('should have correct indices', () => {
-      expect(HttpProtocol.GET.index).toBe(0);
-      expect(HttpProtocol.POST.index).toBe(1);
-      expect(HttpProtocol.PUT.index).toBe(2);
-      expect(HttpProtocol.DELETE.index).toBe(3);
-      expect(HttpProtocol.PATCH.index).toBe(4);
-      expect(HttpProtocol.OPTIONS.index).toBe(5);
-      expect(HttpProtocol.HEAD.index).toBe(6);
+      expect(HttpProtocolTypes.GET.index).toBe(0);
+      expect(HttpProtocolTypes.POST.index).toBe(1);
+      expect(HttpProtocolTypes.PUT.index).toBe(2);
+      expect(HttpProtocolTypes.DELETE.index).toBe(3);
+      expect(HttpProtocolTypes.PATCH.index).toBe(4);
+      expect(HttpProtocolTypes.OPTIONS.index).toBe(5);
+      expect(HttpProtocolTypes.HEAD.index).toBe(6);
     });
   });
 });
