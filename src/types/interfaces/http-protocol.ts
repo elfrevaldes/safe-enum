@@ -12,16 +12,15 @@ const httpProtocolMap = {
   OPTIONS: { value: "OPTIONS" as const, index: 5 },
   HEAD: { value: "HEAD" as const, index: 6 }
 } as const
-export const HttpProtocol = CreateSafeEnum(httpProtocolMap, "HttpProtocol")
 // Type for HttpProtocol enum values
 export type HttpProtocolType = SafeEnum<"HttpProtocol">
-
+export const HttpProtocolTypes = CreateSafeEnum(httpProtocolMap, "HttpProtocol")
 
 const RolesMap = {
   ADMIN: { value: "ADMIN" as const, index: 0 },
   USER: { value: "USER" as const, index: 1 },
   GUEST: { value: "GUEST" as const, index: 2 }
 } as const
-export const Roles = CreateSafeEnum(RolesMap, "Roles")
 // Type for Roles enum values
-export type RolesType = SafeEnum<"Roles">
+export type RoleType = SafeEnum<"Role">
+export const RoleTypes = CreateSafeEnum(RolesMap, "Role")

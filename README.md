@@ -219,9 +219,9 @@ type UserRoleType = SafeEnum<"UserRole">;
 
 // Mixed explicit and auto indexes
 const Priority = CreateSafeEnum({
-  LOW: { value: 'low'},                   // auto: 0
+  LOW: { value: 'low'},                   // auto-indexed: 0
   MEDIUM: { value: 'medium', index: 10 },  
-  HIGH: { value: 'high' }                 // auto: 11
+  HIGH: { value: 'high' }                 // auto-indexed: 11
 }, "Priority");
 type PriorityType = SafeEnum<"Priority">;
 
@@ -239,17 +239,24 @@ function greet(userRole: UserRoleType): string {
   return 'Welcome!';
 }
 
+function greetFromApi(role: unknown): string {
+  if (!UserRole.isEnumValue(role)) {
+    return 'Welcome!';
+  }
+  return greet(role);
+}
+
 // Type-safe lookups
 const isValid = UserRole.hasValue('admin');  // true
 
 // Get all values, keys, and indexes
-const allValues = UserRole.values();    // ['admin', 'editor', 'viewer']
-const allKeys = UserRole.keys();        // ['ADMIN', 'EDITOR', 'VIEWER']
-const allIndexes = UserRole.indexes();  // [10, 13, 14]
+const allValues = UserRole.getValues();    // ['admin', 'editor', 'viewer']
+const allKeys = UserRole.getKeys();        // ['ADMIN', 'EDITOR', 'VIEWER']
+const allIndexes = UserRole.getIndexes();  // [10, 13, 14]
 
 // Iterate over entries
-for (const [key, value] of UserRole.entries()) {
-  console.log(`${key}: ${value.value} (${value.index})`);
+for (const [key, role] of UserRole.getEntries()) {
+  console.log(`${key}: ${role.value} (${role.index})`);
 }
 ```
 
@@ -298,9 +305,9 @@ import { useState } from 'react';
 
 const FormState = CreateSafeEnum({
   IDLE: { value: 'idle', index: 10 },
-  SUBMITTING: { value: 'submitting' },  // auto-indexed 11
+  SUBMITTING: { value: 'submitting' },  // auto-indexed: 11
   SUCCESS: { value: 'success', index: 20 },
-  ERROR: { value: 'error' },            // auto-indexed 21
+  ERROR: { value: 'error' },            // auto-indexed: 21
 } as const, "FormState");
 
 type FormStateType = SafeEnum<"FormState">;
@@ -349,29 +356,39 @@ Creates a type-safe enum from an array of string literals.
 
 | Method                                                                                                                                                     | Description                                      | Example                                                       |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------|
-| `fromValue(value: string): SafeEnum<TypeName> | undefined`                                                                                                | Get enum value by string value                   | `UserRole.fromValue('admin')`                                 |
-| `fromKey(key: string): SafeEnum<TypeName> | undefined`                                                                                                  | Get enum value by key                            | `UserRole.fromKey('ADMIN')`                                   |
-| `fromIndex(index: number): SafeEnum<TypeName> | undefined`                                                                                                  | Get enum value by index                          | `UserRole.fromIndex(0)`                                       |
-| `hasValue(value: string): boolean`                                                                                                                          | Check if value exists                            | `UserRole.hasValue('admin')`                                  |
-| `hasKey(key: string): boolean`                                                                                                                              | Check if key exists                              | `UserRole.hasKey('ADMIN')`                                    |
-| `hasIndex(index: number): boolean`                                                                                                                          | Check if index exists                            | `UserRole.hasIndex(0)`                                        |
-| `isEqual(values: [SafeEnum<TypeName>, ...SafeEnum<TypeName>[]]): boolean`                                                                                       | Static method: Check if ALL enum values are equal | `if (UserRole.isEqual([role1, role2])) { ... }`               |
-| <div align="left">`isEqual(`<br>&nbsp;&nbsp;&nbsp;&nbsp;`value: SafeEnum<TypeName> | `<br>&nbsp;&nbsp;&nbsp;&nbsp;`SafeEnum<TypeName>[]`<br>): boolean`</div> | Instance method: Check if enum value equals ANY in array | `role.isEqual([UserRole.ADMIN, UserRole.EDITOR]): boolean` |
+| `fromValue(value: string): SafeEnum<TypeName>` | Returns the enum value matching the given value, or undefined if not found                                                                                                  | Get enum value by string value                   | `UserRole.fromValue('admin')`                                 |
+| `fromKey(key: string): SafeEnum<TypeName>` | Returns the enum value matching the given key, or undefined if not found                                                                                                  | Get enum value by key                            | `UserRole.fromKey('ADMIN')`                                   |
+| `fromIndex(index: number): SafeEnum<TypeName>` | Returns the enum value matching the given index, or undefined if not found                                                                                                  | Get enum value by index                          | `UserRole.fromIndex(0)`                                       |
+| `hasValue(value: string): boolean`                                                                                                                          | Returns true if the enum has a value matching the given value, false otherwise                                                                                              | Check if value exists                            | `UserRole.hasValue('admin')`                                  |
+| `hasKey(key: string): boolean`                                                                                                                              | Returns true if the enum has a key matching the given key, false otherwise                                                                                                  | Check if key exists                              | `UserRole.hasKey('ADMIN')`                                    |
+| `hasIndex(index: number): boolean`                                                                                                                          | Returns true if the enum has an index matching the given index, false otherwise                                                                                              | Check if index exists                            | `UserRole.hasIndex(0)`                                        |
+| `isEnumValue(value: unknown): value is SafeEnum<TypeName>`                                                                                                   | Returns true if the value is from this enum, false otherwise                                                                                                              | Type guard: Check if value is from this enum     | `UserRole.isEnumValue(maybeRole)`                             |
+| `isEqual(other: SafeEnum<TypeName> \| SafeEnum<TypeName>[]): boolean`                                                                                         | Single value: true if it matches a member of the enum. Array: true if all items are equal to the first. | `if (UserRole.isEqual([role1, role2])) { ... }` |
+| `toString(): string`                                                                                                                                          | Get string representation of the enum object     | `UserRole.toString()`                                        |
+| `toJSON(): { typeName: string, values: Array<{ key: string, value: string, index: number }> }`                                                                | Get JSON-serializable representation of the enum | `UserRole.toJSON()`                                          |
 | `getValues(): string[]`                                                                                                                                     | Get all enum values as strings                   | `UserRole.getValues()`                                        |
 | `getIndexes(): number[]`                                                                                                                                    | Get all enum indices as numbers                  | `UserRole.getIndexes()`                                       |
-| `getEntries(): [string, SafeEnumValue<T>][]`                                                                                                                | Get all [key, value] pairs                       | `UserRole.getEntries()`                                       |
+| `getEntries(): [string, SafeEnum<TypeName>][]`                                                                                                              | Get all [key, value] pairs                       | `UserRole.getEntries()`                                       |
 | `getKeys(): string[]`                                                                                                                                       | Get all enum keys as strings                     | `UserRole.getKeys()`                                           |
+| `getKey(): string`                                                                                                                                          | Get the first enum member's key                  | `UserRole.getKey()`                                           |
+| `getValue(): string`                                                                                                                                        | Get the first enum member's value                | `UserRole.getValue()`                                         |
+| `getIndex(): number`                                                                                                                                        | Get the first enum member's index                | `UserRole.getIndex()`                                         |
+| `[Symbol.iterator](): IterableIterator<SafeEnum<TypeName>>`                                                                                                  | Iterate enum values (supports `for...of` / `Array.from`) | `Array.from(UserRole)`                                   |
 
 ### Instance Methods
 
 | Method                                                                                                                                                     | Description                                                    | Example                             |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------- |
-| <div align="left">`isEqual(`<br>&nbsp;&nbsp;&nbsp;&nbsp;`other: SafeEnumValue<T> \| `<br>&nbsp;&nbsp;&nbsp;&nbsp;`SafeEnumValue<T>[]`<br>): boolean`</div> | Compare with another enum value or array of values             | `UserRole.ADMIN.isEqual(otherRole)` |
-| `toString(): string`                                                                                                                                       | Get string representation in format `"KEY: (value), index: N"` | `UserRole.ADMIN.toString()`         |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|-----------------------------------|
+| `hasValue(value: string): boolean`                                                                                                                         | Check if this enum value has the given value                   | `UserRole.ADMIN.hasValue('admin')`  |
+| `hasKey(key: string): boolean`                                                                                                                             | Check if this enum value has the given key                     | `UserRole.ADMIN.hasKey('ADMIN')`    |
+| `hasIndex(index: number): boolean`                                                                                                                         | Check if this enum value has the given index                   | `UserRole.ADMIN.hasIndex(10)`       |
+| `isEnumValue(value: unknown): value is SafeEnum<TypeName>`                                                                                                 | Type guard: Check if value is from the same enum               | `UserRole.ADMIN.isEnumValue(role)`  |
+| `isEqual(other: SafeEnum<TypeName> \| SafeEnum<TypeName>[]): boolean`                                                                                       | Compare with another enum value or array of values             | `UserRole.ADMIN.isEqual(otherRole)` |
+| `toString(): string`                                                                                                                                       | Get string representation in format "KEY: value, index: N"   | `UserRole.ADMIN.toString()`         |
 | `toJSON(): { key: string, value: string, index: number }`                                                                                                  | Get JSON-serializable object                                   | `UserRole.ADMIN.toJSON()`           |
-| `getIndex(): number`                                                                                                                                       | Get the index of the enum value or Throws if undefined                               | `UserRole.ADMIN.getIndex()`      |
-| `getKey(): string`                                                                                                                                         | Get the key of the enum value or Throws if undefined                               | `UserRole.ADMIN.getKey()`        |
-| `getValue(): string`                                                                                                                                       | Get the value of the enum value or Throws if undefined                               | `UserRole.ADMIN.getValue()`      |
+| `getKeyOrThrow(): string`                                                                                                                                  | Get the key of the enum value (throws if missing)              | `UserRole.ADMIN.getKeyOrThrow()`    |
+| `getValueOrThrow(): string`                                                                                                                                | Get the value of the enum value (throws if missing)            | `UserRole.ADMIN.getValueOrThrow()`  |
+| `getIndexOrThrow(): number`                                                                                                                                | Get the index of the enum value (throws if missing)            | `UserRole.ADMIN.getIndexOrThrow()`  |
 
 ## License
 
